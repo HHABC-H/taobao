@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.taobao.mapper.ProductMapper">
+    
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="org.taobao.pojo.Product">
+        <id column="product_id" property="productId" />
+        <result column="product_name" property="productName" />
+        <result column="description" property="description" />
+        <result column="main_images" property="mainImages" />
+        <result column="detail_images" property="detailImages" />
+        <result column="category_id" property="categoryId" />
+        <result column="merchant_id" property="merchantId" />
+        <result column="shop_id" property="shopId" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+    
+    <!-- 商品详情结果映射，包含SKU信息 -->
+    <resultMap id="ProductDetailResultMap" type="org.taobao.pojo.Product">
+        <id column="product_id" property="productId" />
+        <result column="product_name" property="productName" />
+        <result column="description" property="description" />
+        <result column="main_images" property="mainImages" />
+        <result column="detail_images" property="detailImages" />
+        <result column="category_id" property="categoryId" />
+        <result column="merchant_id" property="merchantId" />
+        <result column="shop_id" property="shopId" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        
+        <!-- 关联查询商品的所有SKU -->
+        <collection property="skus" ofType="org.taobao.pojo.ProductSku">
+            <id column="sku_id" property="skuId" />
+            <result column="product_id" property="productId" />
+            <result column="sku_name" property="skuName" />
+            <result column="sku_type" property="skuType" />
+            <result column="sku_price" property="price" />
+            <result column="stock" property="stock" />
+            <result column="sold_count" property="soldCount" />
+            <result column="sku_image" property="skuImage" />
+            <result column="sku_status" property="status" />
+            <result column="sku_create_time" property="createTime" />
+            <result column="sku_update_time" property="updateTime" />
+        </collection>
+    </resultMap>
+    
+    <!-- 获取商品列表 -->
+    <select id="getProductList" resultMap="BaseResultMap" parameterType="org.taobao.dto.ProductQueryDTO">
+        SELECT product_id, product_name, description, main_images, detail_images, category_id, merchant_id, shop_id, status, create_time, update_time
+        FROM product
+        <where>
+            <if test="productName != null and productName != ''">
+                AND product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY ${sortBy} ${sortOrder}
+        LIMIT #{pageNum}, #{pageSize}
+    </select>
+    
+    <!-- 获取店铺商品列表 -->
+    <select id="getShopProductList" resultMap="BaseResultMap" parameterType="org.taobao.dto.ProductQueryDTO">
+        SELECT product_id, product_name, description, main_images, detail_images, category_id, merchant_id, shop_id, status, create_time, update_time
+        FROM product
+        <where>
+            AND shop_id = #{shopId}
+            <if test="productName != null and productName != ''">
+                AND product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY ${sortBy} ${sortOrder}
+        LIMIT #{pageNum}, #{pageSize}
+    </select>
+    
+    <!-- 获取首页商品列表（支持分类筛选，按数量返回） -->
+    <select id="getHomeProductList" resultMap="BaseResultMap" parameterType="org.taobao.dto.HomeProductQueryDTO">
+        SELECT product_id, product_name, description, main_images, detail_images, category_id, merchant_id, shop_id, status, create_time, update_time
+        FROM product
+        WHERE status = 'on_sale'  <!-- 只显示上架商品 -->
+        <if test="categoryId != null">
+            AND category_id = #{categoryId}
+        </if>
+        ORDER BY RAND()  <!-- 随机排序 -->
+        LIMIT #{limit}  <!-- 按数量返回 -->
+    </select>
+    
+    <!-- 查询商品详情，包含SKU信息 -->
+    <select id="findProductDetail" resultMap="ProductDetailResultMap" parameterType="java.lang.Integer">
+        SELECT 
+            p.product_id,
+            p.product_name,
+            p.description,
+            p.main_images,
+            p.detail_images,
+            p.category_id,
+            p.merchant_id,
+            p.shop_id,
+            p.status,
+            p.create_time,
+            p.update_time,
+            s.sku_id,
+            s.product_id,
+            s.sku_name,
+            s.sku_type,
+            s.price as sku_price,
+            s.stock,
+            s.sold_count,
+            s.sku_image,
+            s.status as sku_status,
+            s.create_time as sku_create_time,
+            s.update_time as sku_update_time
+        FROM product p
+        LEFT JOIN product_sku s ON p.product_id = s.product_id
+        WHERE p.product_id = #{productId}
+    </select>
+    
+    <!-- 根据商品ID查询商品基本信息 -->
+    <select id="findById" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        SELECT product_id, product_name, description, main_images, detail_images, category_id, merchant_id, shop_id, status, create_time, update_time
+        FROM product
+        WHERE product_id = #{productId}
+    </select>
+</mapper>

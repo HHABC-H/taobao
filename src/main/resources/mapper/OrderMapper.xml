@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.taobao.mapper.OrderMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="OrdersResultMap" type="org.taobao.pojo.Orders">
+        <id column="order_id" property="orderId" />
+        <result column="order_no" property="orderNo" />
+        <result column="user_id" property="userId" />
+        <result column="total_amount" property="totalAmount" />
+        <result column="status" property="status" />
+        <result column="shipping_address" property="shippingAddress" />
+        <result column="payment_time" property="paymentTime" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 订单项结果映射 -->
+    <resultMap id="OrderItemResultMap" type="org.taobao.pojo.OrderItem">
+        <id column="item_id" property="itemId" />
+        <result column="order_id" property="orderId" />
+        <result column="sku_id" property="skuId" />
+        <result column="product_name" property="productName" />
+        <result column="sku_type" property="skuType" />
+        <result column="price" property="price" />
+        <result column="quantity" property="quantity" />
+        <result column="total_price" property="totalPrice" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 插入订单 -->
+    <insert id="insertOrder" parameterType="org.taobao.pojo.Orders">
+        INSERT INTO orders (
+            order_no,
+            user_id,
+            total_amount,
+            status,
+            shipping_address,
+            create_time,
+            update_time
+        ) VALUES (
+            #{orderNo},
+            #{userId},
+            #{totalAmount},
+            #{status},
+            #{shippingAddress},
+            #{createTime},
+            #{updateTime}
+        )
+    </insert>
+
+    <!-- 插入订单商品项 -->
+    <insert id="insertOrderItem" parameterType="org.taobao.pojo.OrderItem">
+        INSERT INTO order_item (
+            order_id,
+            sku_id,
+            quantity,
+            price,
+            total_price,
+            create_time
+        ) VALUES (
+            #{orderId},
+            #{skuId},
+            #{quantity},
+            #{price},
+            #{totalPrice},
+            #{createTime}
+        )
+    </insert>
+
+    <!-- 获取订单列表 -->
+    <select id="getOrderList" resultMap="OrdersResultMap" parameterType="org.taobao.dto.OrderQueryDTO">
+        SELECT
+            order_id,
+            order_no,
+            user_id,
+            total_amount,
+            status,
+            shipping_address,
+            payment_time,
+            create_time,
+            update_time
+        FROM orders
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="orderStatus != null and orderStatus != ''">
+                AND status = #{orderStatus}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                AND order_no LIKE CONCAT('%', #{orderNo}, '%')
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND create_time &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND create_time &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{pageNum}, #{pageSize}
+    </select>
+
+    <!-- 根据ID获取订单 -->
+    <select id="getOrderById" resultMap="OrdersResultMap" parameterType="java.lang.Integer">
+        SELECT
+            order_id,
+            order_no,
+            user_id,
+            total_amount,
+            status,
+            shipping_address,
+            payment_time,
+            create_time,
+            update_time
+        FROM orders
+        WHERE order_id = #{orderId}
+    </select>
+
+    <!-- 根据订单ID获取订单商品项 -->
+    <select id="getOrderItemsByOrderId" resultMap="OrderItemResultMap" parameterType="java.lang.Integer">
+        SELECT
+            item_id,
+            order_id,
+            sku_id,
+            product_name,
+            sku_type,
+            price,
+            quantity,
+            total_price,
+            create_time
+        FROM order_item
+        WHERE order_id = #{orderId}
+    </select>
+
+    <!-- 更新订单状态 -->
+    <update id="updateOrderStatus" parameterType="java.lang.Integer">
+        UPDATE orders
+        SET status = #{arg1},
+            update_time = NOW()
+        WHERE order_id = #{arg0}
+    </update>
+
+    <!-- 更新订单支付状态 -->
+    <update id="updatePaymentStatus" parameterType="java.lang.Integer">
+        UPDATE orders
+        SET payment_time = NOW(),
+            update_time = NOW()
+        WHERE order_id = #{arg0}
+    </update>
+
+    <!-- 更新订单物流状态 -->
+    <update id="updateShippingStatus" parameterType="java.lang.Integer">
+        UPDATE orders
+        SET update_time = NOW()
+        WHERE order_id = #{arg0}
+    </update>
+    
+    <!-- 获取用户订单状态统计 -->
+    <select id="getOrderStatusStatistics" parameterType="java.lang.Integer" resultType="java.util.HashMap">
+        SELECT
+            status,
+            COUNT(*) as count
+        FROM orders
+        WHERE user_id = #{userId}
+        GROUP BY status
+    </select>
+
+</mapper>

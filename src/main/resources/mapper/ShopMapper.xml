@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.taobao.mapper.ShopMapper">
+    
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="org.taobao.pojo.Shop">
+        <id column="shop_id" property="shopId" />
+        <result column="merchant_id" property="merchantId" />
+        <result column="shop_name" property="shopName" />
+        <result column="shop_description" property="shopDescription" />
+        <result column="shop_logo" property="shopLogo" />
+        <result column="shop_banner" property="shopBanner" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+    
+    <!-- 获取店铺列表 -->
+    <select id="getShopList" resultMap="BaseResultMap" parameterType="org.taobao.dto.ShopQueryDTO">
+        SELECT shop_id, merchant_id, shop_name, shop_description, shop_logo, shop_banner, status, create_time, update_time
+        FROM shop
+        <where>
+            <if test="shopName != null and shopName != ''">
+                AND shop_name LIKE CONCAT('%', #{shopName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY ${sortBy} ${sortOrder}
+        LIMIT #{pageNum}, #{pageSize}
+    </select>
+    
+    <!-- 获取店铺统计信息 -->
+    <select id="getShopStatistics" resultType="org.taobao.dto.ShopStatisticsDTO" parameterType="java.lang.Integer">
+        SELECT
+            s.shop_id AS shopId,
+            s.shop_name AS shopName,
+            COUNT(p.product_id) AS productCount,
+            COUNT(o.order_id) AS orderCount,
+            IFNULL(SUM(oi.total_price), 0) AS totalSales,
+            COUNT(CASE WHEN o.status = 'pending' THEN 1 END) AS pendingOrderCount,
+            COUNT(CASE WHEN p.status = 'on_sale' THEN 1 END) AS onSaleProductCount,
+            COUNT(CASE WHEN p.status = 'off_sale' THEN 1 END) AS offSaleProductCount
+        FROM shop s
+        LEFT JOIN product p ON s.shop_id = p.shop_id
+        LEFT JOIN orders o ON s.shop_id = o.shop_id
+        LEFT JOIN order_item oi ON o.order_id = oi.order_id
+        WHERE s.shop_id = #{shopId}
+        GROUP BY s.shop_id, s.shop_name
+    </select>
+</mapper>

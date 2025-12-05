@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: taobao_system
+  datasource:
+    url: jdbc:mysql://localhost:3306/taobao_system?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: taobao
+    password: o3174805204O
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: org.taobao.pojo
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  type-handlers-package: org.taobao.typehandler
+
+logging:
+  level:
+    org.taobao.mapper: debug
+    org.springframework.jdbc.support.JdbcTransactionManager: debug
+
+# 阿里云OSS
+aliyun:
+  oss:
+    endpoint: https://oss-cn-beijing.aliyuncs.com
+    bucketName: taobao-hqh
+    region: cn-beijing
+
+server:
+  port: 8085
+  servlet:
+    context-path: /api
