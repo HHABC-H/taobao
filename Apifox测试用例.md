@@ -74,7 +74,12 @@
     "email": "admin@example.com",
     "avatarUrl": "",
     "createTime": "2025-12-04T10:00:00",
-    "updateTime": "2025-12-04T10:00:00"
+    "updateTime": "2025-12-04T10:00:00",
+    "pendingOrderCount": 0,
+    "paidOrderCount": 0,
+    "shippedOrderCount": 0,
+    "completedOrderCount": 0,
+    "cancelledOrderCount": 0
   }
 }
 ```
@@ -217,7 +222,7 @@
 
 ### 2.4 根据商品ID获取商品详情
 
-**接口地址**：`/product/1`
+**接口地址**：`/product/detail/1`
 **请求方法**：GET
 **请求头**：`Content-Type: application/json`
 **预期响应**：
@@ -241,6 +246,41 @@
 }
 ```
 
+### 2.5 获取店铺商品列表
+
+**接口地址**：`/product/shop/list`
+**请求方法**：GET
+**请求头**：
+- `Content-Type: application/json`
+- `Authorization: Bearer {token}`
+**请求参数**：
+- `shopId`: 1
+- `pageNum`: 1
+- `pageSize`: 10
+**预期响应**：
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": [
+    {
+      "productId": 1,
+      "productName": "iPhone 15 Pro",
+      "description": "苹果iPhone 15 Pro，搭载A17 Pro芯片，钛金属设计",
+      "mainImages": ["product/2025/12/iphone15.jpg"],
+      "detailImages": ["product/2025/12/iphone15_detail1.jpg", "product/2025/12/iphone15_detail2.jpg"],
+      "categoryId": 1,
+      "shopId": 1,
+      "merchantId": 2,
+      "status": "on_sale",
+      "createTime": "2025-12-04T10:00:00",
+      "updateTime": "2025-12-04T10:00:00"
+    }
+    // 更多商品...
+  ]
+}
+```
+
 ## 3. OrderController 测试用例
 
 ### 3.1 创建订单
@@ -253,11 +293,17 @@
 **请求参数**：
 ```json
 {
-  "skuId": 1,
-  "quantity": 1,
-  "totalAmount": 7999.00,
-  "shippingAddress": "北京市朝阳区建国路88号",
-  "status": "pending"
+  "consignee": "张三",
+  "phone": "13900139001",
+  "address": "北京市朝阳区建国路88号",
+  "orderItems": [
+    {
+      "productId": 1,
+      "skuId": 1,
+      "quantity": 1,
+      "price": 7999.00
+    }
+  ]
 }
 ```
 **预期响应**：
@@ -371,6 +417,38 @@
 }
 ```
 
+### 3.6 支付订单
+
+**接口地址**：`/order/pay/1`
+**请求方法**：PUT
+**请求头**：
+- `Content-Type: application/json`
+- `Authorization: Bearer {token}`
+**预期响应**：
+```json
+{
+  "code": 200,
+  "msg": "订单支付成功",
+  "data": "订单支付成功"
+}
+```
+
+### 3.7 确认收货
+
+**接口地址**：`/order/confirm/1`
+**请求方法**：PUT
+**请求头**：
+- `Content-Type: application/json`
+- `Authorization: Bearer {token}`
+**预期响应**：
+```json
+{
+  "code": 200,
+  "msg": "订单确认收货成功",
+  "data": "订单确认收货成功"
+}
+```
+
 ## 4. ShopController 测试用例
 
 ### 4.1 根据店铺ID获取店铺信息
@@ -478,9 +556,9 @@
 }
 ```
 
-### 5.2 更新购物车商品数量
+### 5.2 批量更新购物车商品数量
 
-**接口地址**：`/cart/update`
+**接口地址**：`/cart/update/quantity`
 **请求方法**：PUT
 **请求头**：
 - `Content-Type: application/json`
@@ -488,20 +566,52 @@
 **请求参数**：
 ```json
 {
-  "skuId": 1,
-  "quantity": 2
+  "items": [
+    {
+      "cartItemId": 1,
+      "quantity": 2
+    },
+    {
+      "cartItemId": 2,
+      "quantity": 3
+    }
+  ]
 }
 ```
 **预期响应**：
 ```json
 {
   "code": 200,
-  "msg": "更新购物车商品数量成功",
-  "data": "更新购物车商品数量成功"
+  "msg": "批量更新购物车商品数量成功",
+  "data": "批量更新购物车商品数量成功"
 }
 ```
 
-### 5.3 获取购物车列表
+### 5.3 修改购物车商品规格
+
+**接口地址**：`/cart/update/sku`
+**请求方法**：PUT
+**请求头**：
+- `Content-Type: application/json`
+- `Authorization: Bearer {token}`
+**请求参数**：
+```json
+{
+  "cartItemId": 1,
+  "skuId": 2,
+  "quantity": 1
+}
+```
+**预期响应**：
+```json
+{
+  "code": 200,
+  "msg": "修改购物车商品规格成功",
+  "data": "修改购物车商品规格成功"
+}
+```
+
+### 5.4 获取购物车列表
 
 **接口地址**：`/cart/list`
 **请求方法**：GET
@@ -527,7 +637,7 @@
 }
 ```
 
-### 5.4 删除购物车商品
+### 5.5 删除购物车商品
 
 **接口地址**：`/cart/1`
 **请求方法**：DELETE
@@ -543,7 +653,7 @@
 }
 ```
 
-### 5.5 清空购物车
+### 5.6 清空购物车
 
 **接口地址**：`/cart/clear`
 **请求方法**：DELETE
@@ -563,7 +673,7 @@
 
 ### 6.1 添加地址
 
-**接口地址**：`/user/address/add`
+**接口地址**：`/address/add`
 **请求方法**：POST
 **请求头**：
 - `Content-Type: application/json`
@@ -588,7 +698,7 @@
 
 ### 6.2 获取地址列表
 
-**接口地址**：`/user/address/list`
+**接口地址**：`/address/list`
 **请求方法**：GET
 **请求头**：
 - `Content-Type: application/json`
@@ -616,7 +726,7 @@
 
 ### 6.3 获取默认地址
 
-**接口地址**：`/user/address/default`
+**接口地址**：`/address/default`
 **请求方法**：GET
 **请求头**：
 - `Content-Type: application/json`
@@ -641,7 +751,7 @@
 
 ### 6.4 设置默认地址
 
-**接口地址**：`/user/address/set-default/2`
+**接口地址**：`/address/set-default/2`
 **请求方法**：PUT
 **请求头**：
 - `Content-Type: application/json`
@@ -695,10 +805,10 @@
 
 ### 8.3 测试环境
 
-- 测试环境地址：`http://localhost:8080`
+- 测试环境地址：`http://localhost:8085/api`
 - 数据库：MySQL 8.0
-- 用户名：root
-- 密码：123456
+- 用户名：taobao
+- 密码：o3174805204O
 
 ### 8.4 测试数据说明
 

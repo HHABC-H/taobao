@@ -80,5 +80,5 @@ public interface OrderService {
      * @param userId 用户ID
      * @return 包含各种订单状态数量的Map
      */
-    Map<String, Long> getOrderStatusStatistics(Long userId);
+    Map<String, Long> getOrderStatusStatistics(Integer userId);
 }

@@ -49,11 +49,45 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public void updateCartItem(CartItemUpdateDTO cartItemUpdateDTO) {
-        // 更新购物车项数量
-        cartMapper.updateQuantity(
-                cartItemUpdateDTO.getCartItemId(),
-                cartItemUpdateDTO.getQuantity(),
-                new Date());
+        Date now = new Date();
+        
+        // 如果传入了新的SKU ID，则需要修改商品规格
+        if (cartItemUpdateDTO.getSkuId() != null) {
+            // 从BaseContext中获取当前用户ID
+            Integer userId = BaseContext.getCurrentId().intValue();
+            
+            // 检查新的SKU是否已经存在于购物车中
+            CartItem existingItem = cartMapper.findByUserIdAndSkuId(userId, cartItemUpdateDTO.getSkuId());
+            
+            // 如果数量为null，使用原数量
+            Integer quantity = cartItemUpdateDTO.getQuantity();
+            if (quantity == null) {
+                // 获取原购物车项的数量
+                CartItem originalItem = cartMapper.findById(cartItemUpdateDTO.getCartItemId());
+                quantity = originalItem != null ? originalItem.getQuantity() : 1;
+            }
+            
+            if (existingItem != null && !existingItem.getCartItemId().equals(cartItemUpdateDTO.getCartItemId())) {
+                // 新SKU已存在于购物车中，合并数量
+                int newQuantity = existingItem.getQuantity() + quantity;
+                cartMapper.updateQuantity(existingItem.getCartItemId(), newQuantity, now);
+                // 删除原购物车项
+                cartMapper.deleteById(cartItemUpdateDTO.getCartItemId());
+            } else {
+                // 新SKU不存在于购物车中或就是当前项，直接更新SKU ID和数量
+                cartMapper.updateSkuId(
+                        cartItemUpdateDTO.getCartItemId(),
+                        cartItemUpdateDTO.getSkuId(),
+                        quantity,
+                        now);
+            }
+        } else {
+            // 只更新数量
+            cartMapper.updateQuantity(
+                    cartItemUpdateDTO.getCartItemId(),
+                    cartItemUpdateDTO.getQuantity(),
+                    now);
+        }
     }
 
     @Override

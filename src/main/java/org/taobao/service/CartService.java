@@ -18,7 +18,7 @@ public interface CartService {
     void addCartItem(CartItemAddDTO cartItemAddDTO);
 
     /**
-     * 更新购物车商品数量
+     * 更新购物车商品（支持修改数量和规格）
      * 
      * @param cartItemUpdateDTO 购物车更新信息
      */

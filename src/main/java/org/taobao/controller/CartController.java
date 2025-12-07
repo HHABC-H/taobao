@@ -2,6 +2,7 @@ package org.taobao.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.taobao.dto.BatchUpdateCartItemDTO;
 import org.taobao.dto.CartItemAddDTO;
 import org.taobao.dto.CartItemUpdateDTO;
 import org.taobao.pojo.Result;
@@ -9,6 +10,7 @@ import org.taobao.pojo.CartItem;
 import org.taobao.service.CartService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 购物车Controller
@@ -37,18 +39,46 @@ public class CartController {
     }
 
     /**
-     * 更新购物车商品数量
+     * 批量更新购物车商品数量
+     * 
+     * @param batchUpdateCartItemDTO 批量更新购物车信息
+     * @return 更新结果
+     */
+    @PutMapping("/update/quantity")
+    public Result<String> batchUpdateCartItemQuantity(@RequestBody BatchUpdateCartItemDTO batchUpdateCartItemDTO) {
+        try {
+            // 遍历items数组，逐个更新商品数量
+            for (Map<String, Object> item : batchUpdateCartItemDTO.getItems()) {
+                Integer cartItemId = (Integer) item.get("cartItemId");
+                Integer quantity = (Integer) item.get("quantity");
+
+                // 创建CartItemUpdateDTO对象
+                CartItemUpdateDTO cartItemUpdateDTO = new CartItemUpdateDTO();
+                cartItemUpdateDTO.setCartItemId(cartItemId);
+                cartItemUpdateDTO.setQuantity(quantity);
+
+                // 调用现有服务方法更新商品数量
+                cartService.updateCartItem(cartItemUpdateDTO);
+            }
+            return Result.success("批量更新购物车商品数量成功");
+        } catch (Exception e) {
+            return Result.error("批量更新购物车商品数量失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 修改购物车商品规格（支持同时修改数量）
      * 
      * @param cartItemUpdateDTO 购物车更新信息
      * @return 更新结果
      */
-    @PutMapping("/update")
-    public Result<String> updateCartItem(@RequestBody CartItemUpdateDTO cartItemUpdateDTO) {
+    @PutMapping("/update/sku")
+    public Result<String> updateCartItemSku(@RequestBody CartItemUpdateDTO cartItemUpdateDTO) {
         try {
             cartService.updateCartItem(cartItemUpdateDTO);
-            return Result.success("更新购物车商品数量成功");
+            return Result.success("修改购物车商品规格成功");
         } catch (Exception e) {
-            return Result.error("更新购物车商品数量失败：" + e.getMessage());
+            return Result.error("修改购物车商品规格失败：" + e.getMessage());
         }
     }
 

@@ -158,7 +158,7 @@ public class UserController {
             userProfileVO.setUpdateTime(user.getUpdateTime());
 
             // 获取订单状态统计
-            Map<String, Long> orderStats = orderService.getOrderStatusStatistics(user.getUserId());
+            Map<String, Long> orderStats = orderService.getOrderStatusStatistics(user.getUserId().intValue());
             // 设置订单状态统计到VO中
             userProfileVO.setPendingOrderCount(orderStats.getOrDefault("pending", 0L));
             userProfileVO.setPaidOrderCount(orderStats.getOrDefault("paid", 0L));

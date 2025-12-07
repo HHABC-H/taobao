@@ -1,5 +1,6 @@
 package org.taobao.mapper;
 
+import org.apache.ibatis.annotations.Param;
 import org.taobao.dto.OrderQueryDTO;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.OrderItem;
@@ -56,7 +57,7 @@ public interface OrderMapper {
      * @param orderId 订单ID
      * @param status  订单状态
      */
-    void updateOrderStatus(Integer orderId, String status);
+    void updateOrderStatus(@Param("orderId") Integer orderId, @Param("status") String status);
 
     /**
      * 更新订单支付状态
@@ -73,12 +74,12 @@ public interface OrderMapper {
      * @param shippingStatus 物流状态
      */
     void updateShippingStatus(Integer orderId, String shippingStatus);
-    
+
     /**
      * 获取用户订单状态统计
      * 
      * @param userId 用户ID
      * @return 各状态订单数量的Map
      */
-    Map<String, Long> getOrderStatusStatistics(Long userId);
+    Map<String, Long> getOrderStatusStatistics(Integer userId);
 }

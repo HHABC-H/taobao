@@ -45,6 +45,26 @@ public interface CartMapper {
     void updateQuantity(Integer cartItemId, Integer quantity, java.util.Date updateTime);
 
     /**
+     * 更新购物车项SKU ID
+     * 
+     * @param cartItemId 购物车项ID
+     * @param skuId      新的SKU ID
+     * @param quantity   商品数量
+     * @param updateTime 更新时间
+     */
+    @Update("UPDATE cart_item SET sku_id = #{skuId}, quantity = #{quantity}, update_time = #{updateTime} WHERE cart_item_id = #{cartItemId}")
+    void updateSkuId(Integer cartItemId, Integer skuId, Integer quantity, java.util.Date updateTime);
+
+    /**
+     * 根据购物车项ID获取购物车项
+     * 
+     * @param cartItemId 购物车项ID
+     * @return 购物车项信息
+     */
+    @Select("SELECT cart_item_id AS cartItemId, user_id AS userId, sku_id AS skuId, quantity, create_time AS createTime, update_time AS updateTime FROM cart_item WHERE cart_item_id = #{cartItemId}")
+    CartItem findById(Integer cartItemId);
+    
+    /**
      * 根据购物车项ID删除购物车项
      * 
      * @param cartItemId 购物车项ID

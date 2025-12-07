@@ -44,6 +44,12 @@ public class OrderServiceImpl implements OrderService {
         // 计算总金额
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItemDTO> orderItems = orderCreateDTO.getOrderItems();
+
+        // 检查订单商品列表是否为空
+        if (orderItems == null || orderItems.isEmpty()) {
+            throw new IllegalArgumentException("订单商品列表不能为空");
+        }
+
         for (OrderItemDTO item : orderItems) {
             BigDecimal itemAmount = BigDecimal.valueOf(item.getPrice())
                     .multiply(BigDecimal.valueOf(item.getQuantity()));
@@ -113,9 +119,9 @@ public class OrderServiceImpl implements OrderService {
     public void payOrder(Integer orderId) {
         orderMapper.updateOrderStatus(orderId, "paid");
     }
-    
+
     @Override
-    public Map<String, Long> getOrderStatusStatistics(Long userId) {
+    public Map<String, Long> getOrderStatusStatistics(Integer userId) {
         // 调用mapper获取各状态订单数量
         return orderMapper.getOrderStatusStatistics(userId);
     }
