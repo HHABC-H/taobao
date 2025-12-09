@@ -11,7 +11,9 @@ import org.taobao.mapper.ProductSkuMapper;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.OrderItem;
 import org.taobao.pojo.ProductSku;
+import org.taobao.pojo.UserAddress;
 import org.taobao.service.OrderService;
+import org.taobao.service.UserAddressService;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -32,6 +34,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ProductSkuMapper productSkuMapper;
 
+    @Autowired
+    private UserAddressService userAddressService;
+
     @Override
     public Integer createOrder(OrderCreateDTO orderCreateDTO) {
         // 获取当前用户ID
@@ -44,7 +49,28 @@ public class OrderServiceImpl implements OrderService {
         Orders orders = new Orders();
         orders.setOrderNo(orderNo);
         orders.setUserId(userId);
-        orders.setShippingAddress(orderCreateDTO.getAddress());
+
+        // 设置收货人信息
+        // 优先从用户地址表获取默认地址信息
+        try {
+            UserAddress defaultAddress = userAddressService.getDefaultAddress();
+            if (defaultAddress != null) {
+                orders.setShippingAddress(defaultAddress.getFullAddress());
+                orders.setConsigneeName(defaultAddress.getRecipientName());
+                orders.setPhone(defaultAddress.getPhone());
+            } else {
+                // 如果没有默认地址，使用传入的地址信息
+                orders.setShippingAddress(orderCreateDTO.getAddress());
+                orders.setConsigneeName(orderCreateDTO.getConsignee());
+                orders.setPhone(orderCreateDTO.getPhone());
+            }
+        } catch (Exception e) {
+            // 如果获取默认地址失败，使用传入的地址信息
+            orders.setShippingAddress(orderCreateDTO.getAddress());
+            orders.setConsigneeName(orderCreateDTO.getConsignee());
+            orders.setPhone(orderCreateDTO.getPhone());
+        }
+
         orders.setStatus("pending"); // 待支付状态
 
         // 计算总金额
@@ -110,13 +136,36 @@ public class OrderServiceImpl implements OrderService {
         // 获取订单列表
         List<Orders> ordersList = orderMapper.getOrderList(orderQueryDTO);
 
-        // 为每个订单加载订单项信息
+        // 为每个订单加载订单项信息并处理收货人信息
         for (Orders order : ordersList) {
             List<OrderItem> orderItems = orderMapper.getOrderItemsByOrderId(order.getOrderId());
             order.setOrderItems(orderItems);
+
+            // 从用户地址表中获取收货人姓名和电话
+            fillConsigneeInfoFromUserAddress(order);
         }
 
         return ordersList;
+    }
+
+    /**
+     * 从用户地址表中获取收货人姓名和电话信息
+     * 
+     * @param order 订单对象
+     */
+    private void fillConsigneeInfoFromUserAddress(Orders order) {
+        try {
+            // 根据用户ID和订单中的地址文本来查找对应的地址记录
+            UserAddress address = userAddressService.getAddressByUserIdAndText(
+                    order.getUserId(), order.getShippingAddress());
+            if (address != null) {
+                order.setConsigneeName(address.getRecipientName());
+                order.setPhone(address.getPhone());
+            }
+        } catch (Exception e) {
+            // 如果根据地址文本找不到匹配的地址，忽略错误，不影响主要功能
+            // 可能用户已经删除了该地址或者地址有所变更
+        }
     }
 
     @Override
@@ -125,6 +174,9 @@ public class OrderServiceImpl implements OrderService {
         if (order != null) {
             List<OrderItem> orderItems = orderMapper.getOrderItemsByOrderId(orderId);
             order.setOrderItems(orderItems);
+
+            // 从用户地址表中获取收货人姓名和电话
+            fillConsigneeInfoFromUserAddress(order);
         }
         return order;
     }

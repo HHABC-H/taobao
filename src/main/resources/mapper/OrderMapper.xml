@@ -13,6 +13,8 @@
         <result column="total_amount" property="totalAmount" />
         <result column="status" property="status" />
         <result column="shipping_address" property="shippingAddress" />
+        <result column="consignee_name" property="consigneeName" />
+        <result column="phone" property="phone" />
         <result column="payment_time" property="paymentTime" />
         <result column="create_time" property="createTime" />
         <result column="update_time" property="updateTime" />

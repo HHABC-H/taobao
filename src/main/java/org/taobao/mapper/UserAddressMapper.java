@@ -77,4 +77,13 @@ public interface UserAddressMapper {
      * @return 地址信息
      */
     UserAddress selectByIdAndUserId(@Param("addressId") Integer addressId, @Param("userId") Integer userId);
+
+    /**
+     * 根据用户ID和地址文本获取地址
+     * 
+     * @param userId      用户ID
+     * @param addressText 地址文本
+     * @return 地址信息
+     */
+    UserAddress selectByUserIdAndText(@Param("userId") Integer userId, @Param("addressText") String addressText);
 }

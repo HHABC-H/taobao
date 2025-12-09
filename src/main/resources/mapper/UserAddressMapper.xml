@@ -115,4 +115,19 @@
         WHERE address_id = #{addressId} AND user_id = #{userId}
     </select>
 
+    <!-- 根据用户ID和地址文本获取地址 -->
+    <select id="selectByUserIdAndText" resultType="org.taobao.pojo.UserAddress">
+        SELECT
+            address_id,
+            user_id,
+            full_address,
+            recipient_name,
+            phone,
+            is_default,
+            create_time,
+            update_time
+        FROM user_address
+        WHERE user_id = #{userId} AND full_address = #{addressText}
+    </select>
+
 </mapper>

@@ -60,4 +60,13 @@ public interface UserAddressService {
      * @return 地址信息
      */
     UserAddress getAddressById(Integer addressId);
+
+    /**
+     * 根据用户ID和地址文本获取地址
+     * 
+     * @param userId      用户ID
+     * @param addressText 地址文本
+     * @return 地址信息
+     */
+    UserAddress getAddressByUserIdAndText(Integer userId, String addressText);
 }

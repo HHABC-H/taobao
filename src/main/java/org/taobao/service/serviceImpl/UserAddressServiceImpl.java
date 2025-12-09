@@ -181,4 +181,21 @@ public class UserAddressServiceImpl implements UserAddressService {
         }
         return address;
     }
+
+    /**
+     * 根据用户ID和地址文本获取地址
+     * 
+     * @param userId 用户ID
+     * @param addressText 地址文本
+     * @return 地址信息
+     */
+    @Override
+    public UserAddress getAddressByUserIdAndText(Integer userId, String addressText) {
+        // 查询地址
+        UserAddress address = userAddressMapper.selectByUserIdAndText(userId, addressText);
+        if (address == null) {
+            throw new AddressNotFoundException("未找到匹配的地址");
+        }
+        return address;
+    }
 }

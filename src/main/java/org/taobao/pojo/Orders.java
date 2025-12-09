@@ -28,7 +28,7 @@ public class Orders {
     private Date paymentTime; // 支付时间
     private Date createTime; // 创建时间
     private Date updateTime; // 修改时间
-    
+
     // 订单项列表
     private List<OrderItem> orderItems;
 }
