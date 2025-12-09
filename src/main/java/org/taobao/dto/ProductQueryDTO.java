@@ -13,6 +13,7 @@ public class ProductQueryDTO {
     private String status; // 商品状态，用于筛选
     private Integer pageNum = 1; // 页码，默认1
     private Integer pageSize = 10; // 每页条数，默认10
+    private Integer offset; // 偏移量，用于分页
     private String sortBy = "create_time"; // 排序字段，默认create_time
     private String sortOrder = "desc"; // 排序方式，默认desc
 }

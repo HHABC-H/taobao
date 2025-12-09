@@ -36,16 +36,17 @@
         SELECT
             s.shop_id AS shopId,
             s.shop_name AS shopName,
-            COUNT(p.product_id) AS productCount,
-            COUNT(o.order_id) AS orderCount,
+            COUNT(DISTINCT p.product_id) AS productCount,
+            COUNT(DISTINCT o.order_id) AS orderCount,
             IFNULL(SUM(oi.total_price), 0) AS totalSales,
-            COUNT(CASE WHEN o.status = 'pending' THEN 1 END) AS pendingOrderCount,
-            COUNT(CASE WHEN p.status = 'on_sale' THEN 1 END) AS onSaleProductCount,
-            COUNT(CASE WHEN p.status = 'off_sale' THEN 1 END) AS offSaleProductCount
+            COUNT(DISTINCT CASE WHEN o.status = 'pending' THEN o.order_id END) AS pendingOrderCount,
+            COUNT(CASE WHEN p.status = 'on_sale' THEN p.product_id END) AS onSaleProductCount,
+            COUNT(CASE WHEN p.status = 'off_sale' THEN p.product_id END) AS offSaleProductCount
         FROM shop s
         LEFT JOIN product p ON s.shop_id = p.shop_id
-        LEFT JOIN orders o ON s.shop_id = o.shop_id
-        LEFT JOIN order_item oi ON o.order_id = oi.order_id
+        LEFT JOIN product_sku ps ON p.product_id = ps.product_id
+        LEFT JOIN order_item oi ON ps.sku_id = oi.sku_id
+        LEFT JOIN orders o ON oi.order_id = o.order_id
         WHERE s.shop_id = #{shopId}
         GROUP BY s.shop_id, s.shop_name
     </select>

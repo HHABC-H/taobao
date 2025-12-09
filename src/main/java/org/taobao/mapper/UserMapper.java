@@ -5,7 +5,10 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+import org.taobao.dto.UserQueryDTO;
 import org.taobao.pojo.User;
+
+import java.util.List;
 
 @Mapper
 public interface UserMapper {
@@ -41,4 +44,14 @@ public interface UserMapper {
             + "VALUES (#{account}, #{password}, #{userType}, #{status}, #{username}, #{gender}, #{birthday}, #{phone}, #{email}, #{avatarUrl}, #{createTime}, #{updateTime})")
     @Options(useGeneratedKeys = true, keyProperty = "userId")
     void insert(User user);
+
+    /**
+     * 获取用户列表
+     */
+    List<User> getUserList(UserQueryDTO userQueryDTO);
+
+    /**
+     * 更新用户状态
+     */
+    void updateStatus(Long userId, String status);
 }

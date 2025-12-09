@@ -21,4 +21,5 @@ public class CartItem {
     private Integer quantity; // 商品数量
     private Date createTime; // 创建时间
     private Date updateTime; // 修改时间
+    private ProductSku sku; // SKU详细信息
 }

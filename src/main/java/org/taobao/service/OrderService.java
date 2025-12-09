@@ -52,27 +52,6 @@ public interface OrderService {
      * @param status  订单状态
      */
     void updateOrderStatus(Integer orderId, String status);
-
-    /**
-     * 取消订单
-     * 
-     * @param orderId 订单ID
-     */
-    void cancelOrder(Integer orderId);
-
-    /**
-     * 确认收货
-     * 
-     * @param orderId 订单ID
-     */
-    void confirmOrder(Integer orderId);
-
-    /**
-     * 支付订单
-     * 
-     * @param orderId 订单ID
-     */
-    void payOrder(Integer orderId);
     
     /**
      * 获取用户订单状态统计

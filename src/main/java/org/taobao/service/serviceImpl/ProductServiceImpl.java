@@ -44,6 +44,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<Product> getProductList(ProductQueryDTO productQueryDTO) {
+        // 强制重新计算偏移量，不受前端参数影响
+        if (productQueryDTO.getPageNum() != null && productQueryDTO.getPageSize() != null) {
+            productQueryDTO.setOffset((productQueryDTO.getPageNum() - 1) * productQueryDTO.getPageSize());
+        } else {
+            // 如果没有页码信息，默认从第0条开始
+            productQueryDTO.setOffset(0);
+        }
         List<Product> products = productMapper.getProductList(productQueryDTO);
         // 为每个商品设置第一个SKU的价格
         for (Product product : products) {
@@ -188,6 +195,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<Product> getShopProductList(Integer shopId, ProductQueryDTO productQueryDTO) {
+        // 强制重新计算偏移量，不受前端参数影响
+        if (productQueryDTO.getPageNum() != null && productQueryDTO.getPageSize() != null) {
+            productQueryDTO.setOffset((productQueryDTO.getPageNum() - 1) * productQueryDTO.getPageSize());
+        } else {
+            // 如果没有页码信息，默认从第0条开始
+            productQueryDTO.setOffset(0);
+        }
         // 设置店铺ID到查询条件中
         productQueryDTO.setShopId(shopId);
         return productMapper.getShopProductList(productQueryDTO);
@@ -218,23 +232,10 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
-        // 如果数量不足，重复填充商品直到达到要求的数量
-        List<Product> result = new ArrayList<>();
-        int totalNeeded = homeProductQueryDTO.getLimit();
-        int availableCount = products.size();
-
-        if (availableCount > 0) {
-            // 循环填充直到达到要求数量
-            for (int i = 0; i < totalNeeded; i++) {
-                // 通过取余运算循环获取商品
-                result.add(products.get(i % availableCount));
-            }
-
-            // 再次随机排序，确保结果更随机
-            Collections.shuffle(result);
-        }
-
-        return result;
+        // 直接返回查询到的商品，不进行重复填充
+        // 对结果进行随机排序
+        Collections.shuffle(products);
+        return products;
     }
 
     @Override

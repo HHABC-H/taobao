@@ -32,7 +32,7 @@
     </resultMap>
 
     <!-- 插入订单 -->
-    <insert id="insertOrder" parameterType="org.taobao.pojo.Orders">
+    <insert id="insertOrder" parameterType="org.taobao.pojo.Orders" useGeneratedKeys="true" keyProperty="orderId">
         INSERT INTO orders (
             order_no,
             user_id,
@@ -57,6 +57,8 @@
         INSERT INTO order_item (
             order_id,
             sku_id,
+            product_name,
+            sku_type,
             quantity,
             price,
             total_price,
@@ -64,6 +66,8 @@
         ) VALUES (
             #{orderId},
             #{skuId},
+            #{productName},
+            #{skuType},
             #{quantity},
             #{price},
             #{totalPrice},
@@ -88,6 +92,16 @@
             <if test="userId != null">
                 AND user_id = #{userId}
             </if>
+            <if test="shopId != null">
+                AND order_id IN (
+                    SELECT DISTINCT o.order_id
+                    FROM orders o
+                    LEFT JOIN order_item oi ON o.order_id = oi.order_id
+                    LEFT JOIN product_sku ps ON oi.sku_id = ps.sku_id
+                    LEFT JOIN product p ON ps.product_id = p.product_id
+                    WHERE p.shop_id = #{shopId}
+                )
+            </if>
             <if test="orderStatus != null and orderStatus != ''">
                 AND status = #{orderStatus}
             </if>
@@ -102,7 +116,7 @@
             </if>
         </where>
         ORDER BY create_time DESC
-        LIMIT #{pageNum}, #{pageSize}
+        LIMIT #{offset}, #{pageSize}
     </select>
 
     <!-- 根据ID获取订单 -->
@@ -144,30 +158,17 @@
             update_time = NOW()
         WHERE order_id = #{orderId}
     </update>
-
-    <!-- 更新订单支付状态 -->
-    <update id="updatePaymentStatus" parameterType="java.lang.Integer">
-        UPDATE orders
-        SET payment_time = NOW(),
-            update_time = NOW()
-        WHERE order_id = #{arg0}
-    </update>
-
-    <!-- 更新订单物流状态 -->
-    <update id="updateShippingStatus" parameterType="java.lang.Integer">
-        UPDATE orders
-        SET update_time = NOW()
-        WHERE order_id = #{arg0}
-    </update>
     
     <!-- 获取用户订单状态统计 -->
     <select id="getOrderStatusStatistics" parameterType="java.lang.Integer" resultType="java.util.HashMap">
         SELECT
-            status,
-            COUNT(*) as count
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid,
+            SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) as shipped,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
         FROM orders
         WHERE user_id = #{userId}
-        GROUP BY status
     </select>
 
 </mapper>

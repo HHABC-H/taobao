@@ -175,20 +175,23 @@ public class ProductController {
     }
 
     /**
-     * 获取首页商品列表（支持分类筛选，按数量返回）
+     * 获取首页商品列表（支持分类筛选和模糊查询，按数量返回）
      * 
      * @param categoryId 分类ID：1-数码, 2-生鲜, 3-图书, 4-衣服, 5-零食, 6-宠物
+     * @param productName 商品名称，用于模糊查询
      * @param limit      返回数量，默认18（3排，每排6个）
      * @return 随机排列的商品列表
      */
     @GetMapping("/home/list")
     public Result<List<Product>> getHomeProductList(
             @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) String productName,
             @RequestParam(defaultValue = "18") Integer limit) {
         try {
             // 构建查询DTO
             HomeProductQueryDTO homeProductQueryDTO = new HomeProductQueryDTO();
             homeProductQueryDTO.setCategoryId(categoryId);
+            homeProductQueryDTO.setProductName(productName);
             homeProductQueryDTO.setLimit(limit);
 
             // 调用服务层获取首页商品列表

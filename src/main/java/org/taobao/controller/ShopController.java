@@ -1,22 +1,26 @@
 package org.taobao.controller;
 
 import org.taobao.context.BaseContext;
+import org.taobao.dto.OrderQueryDTO;
+import org.taobao.dto.ProductCreateDTO;
+import org.taobao.dto.ProductQueryDTO;
+import org.taobao.dto.ProductUpdateDTO;
 import org.taobao.dto.ShopCreateDTO;
 import org.taobao.dto.ShopQueryDTO;
 import org.taobao.dto.ShopStatisticsDTO;
 import org.taobao.dto.ShopUpdateDTO;
+import org.taobao.exception.ShopNotFoundException;
+import org.taobao.pojo.Orders;
+import org.taobao.pojo.Product;
 import org.taobao.pojo.Result;
 import org.taobao.pojo.Shop;
+import org.taobao.service.OrderService;
+import org.taobao.service.ProductService;
 import org.taobao.service.ShopService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,6 +32,12 @@ public class ShopController {
 
     @Autowired
     private ShopService shopService;
+
+    @Autowired
+    private ProductService productService;
+
+    @Autowired
+    private OrderService orderService;
 
     /**
      * 根据店铺ID获取店铺信息
@@ -48,7 +58,7 @@ public class ShopController {
     /**
      * 获取当前商家的店铺信息
      * 
-     * @return 店铺信息
+     * @return 店铺信息，如果不存在返回null
      */
     @GetMapping("/my")
     public Result<Shop> getMyShop() {
@@ -57,6 +67,9 @@ public class ShopController {
             Integer merchantId = BaseContext.getCurrentId().intValue();
             Shop shop = shopService.getShopByMerchantId(merchantId);
             return Result.success(shop);
+        } catch (ShopNotFoundException e) {
+            // 店铺不存在时返回null，而不是500错误
+            return Result.success(null);
         } catch (Exception e) {
             return Result.error("获取店铺信息失败：" + e.getMessage());
         }
@@ -97,7 +110,7 @@ public class ShopController {
             return Result.error("店铺信息更新失败：" + e.getMessage());
         }
     }
-    
+
     /**
      * 获取店铺列表
      * 
@@ -113,7 +126,7 @@ public class ShopController {
             return Result.error("获取店铺列表失败：" + e.getMessage());
         }
     }
-    
+
     /**
      * 获取店铺统计信息
      * 
@@ -129,11 +142,11 @@ public class ShopController {
             return Result.error("获取店铺统计信息失败：" + e.getMessage());
         }
     }
-    
+
     /**
      * 获取当前商家店铺的统计信息
      * 
-     * @return 店铺统计信息
+     * @return 店铺统计信息，如果店铺不存在返回null
      */
     @GetMapping("/statistics/my")
     public Result<ShopStatisticsDTO> getMyShopStatistics() {
@@ -145,11 +158,14 @@ public class ShopController {
             // 获取店铺统计信息
             ShopStatisticsDTO statistics = shopService.getShopStatistics(shop.getShopId());
             return Result.success(statistics);
+        } catch (ShopNotFoundException e) {
+            // 店铺不存在时返回null，而不是500错误
+            return Result.success(null);
         } catch (Exception e) {
             return Result.error("获取店铺统计信息失败：" + e.getMessage());
         }
     }
-    
+
     /**
      * 审核店铺
      * 
@@ -166,7 +182,7 @@ public class ShopController {
             return Result.error("店铺审核失败：" + e.getMessage());
         }
     }
-    
+
     /**
      * 关闭店铺
      * 
@@ -182,7 +198,7 @@ public class ShopController {
             return Result.error("店铺关闭失败：" + e.getMessage());
         }
     }
-    
+
     /**
      * 重新开店
      * 
@@ -196,6 +212,220 @@ public class ShopController {
             return Result.success("店铺重新开店成功");
         } catch (Exception e) {
             return Result.error("店铺重新开店失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取商家商品列表
+     * 
+     * @param productQueryDTO 查询条件
+     * @return 商品列表
+     */
+    @GetMapping("/product/list")
+    public Result<List<Product>> getMerchantProductList(ProductQueryDTO productQueryDTO) {
+        try {
+            // 从BaseContext中获取当前用户ID
+            Integer merchantId = BaseContext.getCurrentId().intValue();
+
+            // 获取当前商家的店铺
+            Shop shop = shopService.getShopByMerchantId(merchantId);
+            if (shop == null) {
+                return Result.success(Collections.emptyList());
+            }
+
+            // 设置shopId到查询条件中
+            productQueryDTO.setShopId(shop.getShopId());
+
+            // 调用服务层获取商品列表
+            List<Product> productList = productService.getShopProductList(shop.getShopId(), productQueryDTO);
+            return Result.success(productList);
+        } catch (ShopNotFoundException e) {
+            // 店铺不存在时返回空列表，而不是500错误
+            return Result.success(Collections.emptyList());
+        } catch (Exception e) {
+            return Result.error("获取商家商品列表失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家添加商品
+     * 
+     * @param productCreateDTO 商品创建信息
+     * @return 创建结果
+     */
+    @PostMapping("/product/add")
+    public Result<String> addProduct(@RequestBody ProductCreateDTO productCreateDTO) {
+        try {
+            // 从BaseContext中获取当前用户ID
+            Integer merchantId = BaseContext.getCurrentId().intValue();
+
+            // 获取当前商家的店铺
+            Shop shop = shopService.getShopByMerchantId(merchantId);
+            if (shop == null) {
+                return Result.error("店铺不存在，无法添加商品");
+            }
+
+            // 设置shopId到商品创建信息中
+            productCreateDTO.setShopId(shop.getShopId());
+
+            // 调用服务层添加商品
+            productService.createProduct(productCreateDTO);
+            return Result.success("添加商品成功");
+        } catch (Exception e) {
+            return Result.error("添加商品失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家更新商品
+     * 
+     * @param productId        商品ID
+     * @param productUpdateDTO 商品更新信息
+     * @return 更新结果
+     */
+    @PutMapping("/product/update/{productId}")
+    public Result<String> updateProduct(@PathVariable Integer productId,
+            @RequestBody ProductUpdateDTO productUpdateDTO) {
+        try {
+            // 调用服务层更新商品
+            productService.updateProduct(productId, productUpdateDTO);
+            return Result.success("更新商品成功");
+        } catch (Exception e) {
+            return Result.error("更新商品失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家删除商品
+     * 
+     * @param productId 商品ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/product/{productId}")
+    public Result<String> deleteProduct(@PathVariable Integer productId) {
+        try {
+            // 调用服务层删除商品
+            productService.deleteProduct(productId);
+            return Result.success("删除商品成功");
+        } catch (Exception e) {
+            return Result.error("删除商品失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家添加SKU
+     * 
+     * @param sku 商品SKU信息
+     * @return 添加结果
+     */
+    @PostMapping("/product/sku/add")
+    public Result<String> addSku(@RequestBody org.taobao.pojo.ProductSku sku) {
+        try {
+            // 调用服务层添加SKU
+            // 注意：这里需要ProductService中添加addSku方法
+            return Result.error("暂未实现添加SKU功能");
+        } catch (Exception e) {
+            return Result.error("添加SKU失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家更新SKU
+     * 
+     * @param skuId SKU ID
+     * @param sku   SKU信息
+     * @return 更新结果
+     */
+    @PutMapping("/product/sku/update/{skuId}")
+    public Result<String> updateSku(@PathVariable Integer skuId, @RequestBody org.taobao.pojo.ProductSku sku) {
+        try {
+            // 调用服务层更新SKU
+            // 注意：这里需要ProductService中添加updateSku方法
+            return Result.error("暂未实现更新SKU功能");
+        } catch (Exception e) {
+            return Result.error("更新SKU失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家删除SKU
+     * 
+     * @param skuId SKU ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/product/sku/{skuId}")
+    public Result<String> deleteSku(@PathVariable Integer skuId) {
+        try {
+            // 调用服务层删除SKU
+            // 注意：这里需要ProductService中添加deleteSku方法
+            return Result.error("暂未实现删除SKU功能");
+        } catch (Exception e) {
+            return Result.error("删除SKU失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家获取订单列表
+     * 
+     * @param orderQueryDTO 查询条件
+     * @return 订单列表
+     */
+    @GetMapping("/order/list")
+    public Result<List<Orders>> getShopOrderList(@ModelAttribute OrderQueryDTO orderQueryDTO) {
+        try {
+            // 从BaseContext中获取当前用户ID
+            Integer merchantId = BaseContext.getCurrentId().intValue();
+
+            // 获取当前商家的店铺
+            Shop shop = shopService.getShopByMerchantId(merchantId);
+            if (shop == null) {
+                return Result.success(Collections.emptyList());
+            }
+
+            // 设置shopId到查询条件中
+            orderQueryDTO.setShopId(shop.getShopId());
+
+            // 调用服务层获取订单列表
+            List<Orders> orderList = orderService.getOrderList(orderQueryDTO);
+            return Result.success(orderList);
+        } catch (Exception e) {
+            return Result.error("获取商家订单列表失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家获取订单详情
+     * 
+     * @param orderId 订单ID
+     * @return 订单详情
+     */
+    @GetMapping("/order/{orderId}")
+    public Result<Orders> getShopOrderDetail(@PathVariable Integer orderId) {
+        try {
+            // 调用服务层获取订单详情
+            Orders order = orderService.getOrderById(orderId);
+            return Result.success(order);
+        } catch (Exception e) {
+            return Result.error("获取商家订单详情失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家发货
+     * 
+     * @param orderId       订单ID
+     * @param logisticsInfo 物流信息
+     * @return 发货结果
+     */
+    @PutMapping("/order/ship/{orderId}")
+    public Result<String> shipOrder(@PathVariable Integer orderId,
+            @RequestBody java.util.Map<String, String> logisticsInfo) {
+        try {
+            // 调用服务层发货
+            // 注意：这里需要OrderService中添加shipOrder方法，并支持物流信息参数
+            return Result.error("暂未实现商家发货功能");
+        } catch (Exception e) {
+            return Result.error("商家发货失败：" + e.getMessage());
         }
     }
 }

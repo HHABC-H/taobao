@@ -18,6 +18,7 @@ import java.util.Date;
 public class ProductSku {
     private Integer skuId; // SKU ID
     private Integer productId; // 商品ID
+    private String productName; // 商品名称（SPU名称）
     private String skuName; // SKU名称
     private String skuType; // SKU规格分类
     private BigDecimal price; // 价格

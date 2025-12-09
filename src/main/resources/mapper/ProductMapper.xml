@@ -63,36 +63,62 @@
             </if>
         </where>
         ORDER BY ${sortBy} ${sortOrder}
-        LIMIT #{pageNum}, #{pageSize}
+        LIMIT #{offset}, #{pageSize}
     </select>
     
     <!-- 获取店铺商品列表 -->
-    <select id="getShopProductList" resultMap="BaseResultMap" parameterType="org.taobao.dto.ProductQueryDTO">
-        SELECT product_id, product_name, description, main_images, detail_images, category_id, merchant_id, shop_id, status, create_time, update_time
-        FROM product
+    <select id="getShopProductList" resultMap="ProductDetailResultMap" parameterType="org.taobao.dto.ProductQueryDTO">
+        SELECT 
+            p.product_id,
+            p.product_name,
+            p.description,
+            p.main_images,
+            p.detail_images,
+            p.category_id,
+            p.merchant_id,
+            p.shop_id,
+            p.status,
+            p.create_time,
+            p.update_time,
+            s.sku_id,
+            s.product_id as sku_product_id,
+            s.sku_name,
+            s.sku_type,
+            s.price as sku_price,
+            s.stock,
+            s.sold_count,
+            s.sku_image,
+            s.status as sku_status,
+            s.create_time as sku_create_time,
+            s.update_time as sku_update_time
+        FROM product p
+        LEFT JOIN product_sku s ON p.product_id = s.product_id
         <where>
-            AND shop_id = #{shopId}
+            p.shop_id = #{shopId}
             <if test="productName != null and productName != ''">
-                AND product_name LIKE CONCAT('%', #{productName}, '%')
+                AND p.product_name LIKE CONCAT('%', #{productName}, '%')
             </if>
             <if test="categoryId != null">
-                AND category_id = #{categoryId}
+                AND p.category_id = #{categoryId}
             </if>
             <if test="status != null and status != ''">
-                AND status = #{status}
+                AND p.status = #{status}
             </if>
         </where>
-        ORDER BY ${sortBy} ${sortOrder}
-        LIMIT #{pageNum}, #{pageSize}
+        ORDER BY p.${sortBy} p.${sortOrder}
+        LIMIT #{offset}, #{pageSize}
     </select>
     
-    <!-- 获取首页商品列表（支持分类筛选，按数量返回） -->
+    <!-- 获取首页商品列表（支持分类筛选和模糊查询，按数量返回） -->
     <select id="getHomeProductList" resultMap="BaseResultMap" parameterType="org.taobao.dto.HomeProductQueryDTO">
         SELECT product_id, product_name, description, main_images, detail_images, category_id, merchant_id, shop_id, status, create_time, update_time
         FROM product
         WHERE status = 'on_sale'  <!-- 只显示上架商品 -->
         <if test="categoryId != null">
             AND category_id = #{categoryId}
+        </if>
+        <if test="productName != null and productName != ''">
+            AND product_name LIKE CONCAT('%', #{productName}, '%')
         </if>
         ORDER BY RAND()  <!-- 随机排序 -->
         LIMIT #{limit}  <!-- 按数量返回 -->

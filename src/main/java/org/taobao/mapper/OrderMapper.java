@@ -60,26 +60,10 @@ public interface OrderMapper {
     void updateOrderStatus(@Param("orderId") Integer orderId, @Param("status") String status);
 
     /**
-     * 更新订单支付状态
-     * 
-     * @param orderId       订单ID
-     * @param paymentStatus 支付状态
-     */
-    void updatePaymentStatus(Integer orderId, String paymentStatus);
-
-    /**
-     * 更新订单物流状态
-     * 
-     * @param orderId        订单ID
-     * @param shippingStatus 物流状态
-     */
-    void updateShippingStatus(Integer orderId, String shippingStatus);
-
-    /**
      * 获取用户订单状态统计
      * 
      * @param userId 用户ID
-     * @return 各状态订单数量的Map
+     * @return 各状态订单数量的列表
      */
-    Map<String, Long> getOrderStatusStatistics(Integer userId);
+    List<Map<String, Object>> getOrderStatusStatistics(Integer userId);
 }

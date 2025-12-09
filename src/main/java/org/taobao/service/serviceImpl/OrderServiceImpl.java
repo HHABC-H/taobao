@@ -7,12 +7,15 @@ import org.taobao.dto.OrderCreateDTO;
 import org.taobao.dto.OrderItemDTO;
 import org.taobao.dto.OrderQueryDTO;
 import org.taobao.mapper.OrderMapper;
+import org.taobao.mapper.ProductSkuMapper;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.OrderItem;
+import org.taobao.pojo.ProductSku;
 import org.taobao.service.OrderService;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +28,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderMapper orderMapper;
+
+    @Autowired
+    private ProductSkuMapper productSkuMapper;
 
     @Override
     public Integer createOrder(OrderCreateDTO orderCreateDTO) {
@@ -64,9 +70,18 @@ public class OrderServiceImpl implements OrderService {
 
         // 插入订单商品项
         for (OrderItemDTO itemDTO : orderItems) {
+            // 通过skuId查询SKU信息，包含商品名称
+            ProductSku sku = productSkuMapper.findByIdWithProductInfo(itemDTO.getSkuId());
+            if (sku == null) {
+                throw new IllegalArgumentException("SKU不存在，skuId：" + itemDTO.getSkuId());
+            }
+
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(orders.getOrderId());
             orderItem.setSkuId(itemDTO.getSkuId());
+            // 设置商品名称和SKU类型
+            orderItem.setProductName(sku.getProductName()); // 使用SPU商品名称
+            orderItem.setSkuType(sku.getSkuType());
             orderItem.setQuantity(itemDTO.getQuantity());
             orderItem.setPrice(BigDecimal.valueOf(itemDTO.getPrice()));
             BigDecimal itemTotalPrice = BigDecimal.valueOf(itemDTO.getPrice())
@@ -87,12 +102,31 @@ public class OrderServiceImpl implements OrderService {
             orderQueryDTO.setUserId(BaseContext.getCurrentId().intValue());
         }
 
-        return orderMapper.getOrderList(orderQueryDTO);
+        // 计算偏移量
+        if (orderQueryDTO.getPageNum() != null && orderQueryDTO.getPageSize() != null) {
+            orderQueryDTO.setOffset((orderQueryDTO.getPageNum() - 1) * orderQueryDTO.getPageSize());
+        }
+
+        // 获取订单列表
+        List<Orders> ordersList = orderMapper.getOrderList(orderQueryDTO);
+
+        // 为每个订单加载订单项信息
+        for (Orders order : ordersList) {
+            List<OrderItem> orderItems = orderMapper.getOrderItemsByOrderId(order.getOrderId());
+            order.setOrderItems(orderItems);
+        }
+
+        return ordersList;
     }
 
     @Override
     public Orders getOrderById(Integer orderId) {
-        return orderMapper.getOrderById(orderId);
+        Orders order = orderMapper.getOrderById(orderId);
+        if (order != null) {
+            List<OrderItem> orderItems = orderMapper.getOrderItemsByOrderId(orderId);
+            order.setOrderItems(orderItems);
+        }
+        return order;
     }
 
     @Override
@@ -106,23 +140,46 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void cancelOrder(Integer orderId) {
-        orderMapper.updateOrderStatus(orderId, "cancelled");
-    }
-
-    @Override
-    public void confirmOrder(Integer orderId) {
-        orderMapper.updateOrderStatus(orderId, "completed");
-    }
-
-    @Override
-    public void payOrder(Integer orderId) {
-        orderMapper.updateOrderStatus(orderId, "paid");
-    }
-
-    @Override
     public Map<String, Long> getOrderStatusStatistics(Integer userId) {
-        // 调用mapper获取各状态订单数量
-        return orderMapper.getOrderStatusStatistics(userId);
+        // 创建订单状态统计Map，初始值都为0
+        Map<String, Long> result = new HashMap<>();
+        result.put("pending", 0L);
+        result.put("paid", 0L);
+        result.put("shipped", 0L);
+        result.put("completed", 0L);
+        result.put("cancelled", 0L);
+
+        try {
+            // 调用mapper获取各状态订单数量
+            List<Map<String, Object>> statusList = orderMapper.getOrderStatusStatistics(userId);
+
+            // 如果查询结果不为空，更新统计数据
+            if (statusList != null && !statusList.isEmpty()) {
+                // 如果是单行结果（CASE WHEN查询）
+                if (statusList.size() == 1) {
+                    Map<String, Object> statusMap = statusList.get(0);
+                    for (Map.Entry<String, Long> entry : result.entrySet()) {
+                        Object value = statusMap.get(entry.getKey());
+                        if (value != null) {
+                            result.put(entry.getKey(), ((Number) value).longValue());
+                        }
+                    }
+                } else {
+                    // 如果是多行结果（GROUP BY查询）
+                    for (Map<String, Object> statusMap : statusList) {
+                        String status = (String) statusMap.get("status");
+                        Long count = ((Number) statusMap.get("count")).longValue();
+                        if (result.containsKey(status)) {
+                            result.put(status, count);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 如果查询失败，返回初始值为0的统计结果
+            e.printStackTrace();
+        }
+
+        return result;
     }
 }

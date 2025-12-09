@@ -19,4 +19,31 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <!-- 查询用户列表 -->
+    <select id="getUserList" parameterType="org.taobao.dto.UserQueryDTO" resultMap="UserResultMap">
+        SELECT user_id AS userId, account, password, user_type AS userType, status, username, gender, birthday, phone, email, avatar_url AS avatarUrl, create_time AS createTime, update_time AS updateTime FROM user
+        <where>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="account != null and account != ''">
+                AND account LIKE CONCAT('%', #{account}, '%')
+            </if>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="userType != null and userType != ''">
+                AND user_type = #{userType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 更新用户状态 -->
+    <update id="updateStatus">
+        UPDATE user SET status = #{status}, update_time = NOW() WHERE user_id = #{userId}
+    </update>
 </mapper>

@@ -7,6 +7,7 @@ import org.taobao.constant.MessageConstant;
 import org.taobao.constant.StatusConstant;
 import org.taobao.dto.UserLoginDTO;
 import org.taobao.dto.UserProfileUpdateDTO;
+import org.taobao.dto.UserQueryDTO;
 import org.taobao.dto.UserRegisterDTO;
 import org.taobao.exception.AccountLockedException;
 import org.taobao.exception.AccountNotFoundException;
@@ -17,6 +18,7 @@ import org.taobao.pojo.User;
 import org.taobao.service.UserService;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -119,5 +121,30 @@ public class UserServiceImpl implements UserService {
 
         // 3、保存更新
         userMapper.update(existingUser);
+    }
+
+    @Override
+    public List<User> getUserList(UserQueryDTO userQueryDTO) {
+        return userMapper.getUserList(userQueryDTO);
+    }
+
+    @Override
+    public User getUserById(Long userId) {
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        return user;
+    }
+
+    @Override
+    public void updateUserStatus(Long userId, String status) {
+        // 1、查询用户是否存在
+        User existingUser = userMapper.findById(userId);
+        if (existingUser == null) {
+            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        // 2、更新用户状态
+        userMapper.updateStatus(userId, status);
     }
 }

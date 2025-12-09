@@ -2,14 +2,18 @@ package org.taobao.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.taobao.context.BaseContext;
 import org.taobao.dto.OrderCreateDTO;
 import org.taobao.dto.OrderQueryDTO;
 import org.taobao.pojo.Result;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.OrderItem;
+import org.taobao.pojo.Shop;
 import org.taobao.service.OrderService;
+import org.taobao.service.ShopService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单Controller
@@ -21,17 +25,20 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private ShopService shopService;
+
     /**
      * 创建订单
      * 
      * @param orderCreateDTO 订单创建DTO
-     * @return 创建结果
+     * @return 订单ID
      */
     @PostMapping("/create")
-    public Result<String> createOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
+    public Result<Integer> createOrder(@RequestBody OrderCreateDTO orderCreateDTO) {
         try {
             Integer orderId = orderService.createOrder(orderCreateDTO);
-            return Result.success("订单创建成功，订单ID：" + orderId);
+            return Result.success(orderId);
         } catch (Exception e) {
             return Result.error("订单创建失败：" + e.getMessage());
         }
@@ -50,6 +57,29 @@ public class OrderController {
             return Result.success(orderList);
         } catch (Exception e) {
             return Result.error("获取订单列表失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 商家获取店铺订单列表
+     * 
+     * @param orderQueryDTO 查询条件
+     * @return 店铺订单列表
+     */
+    @GetMapping("/shop/list")
+    public Result<List<Orders>> getShopOrderList(OrderQueryDTO orderQueryDTO) {
+        try {
+            // 从BaseContext中获取当前用户ID
+            Integer merchantId = BaseContext.getCurrentId().intValue();
+            // 根据商家ID获取店铺
+            Shop shop = shopService.getShopByMerchantId(merchantId);
+            // 设置店铺ID到查询条件中
+            orderQueryDTO.setShopId(shop.getShopId());
+            // 查询订单列表
+            List<Orders> orderList = orderService.getOrderList(orderQueryDTO);
+            return Result.success(orderList);
+        } catch (Exception e) {
+            return Result.error("获取店铺订单列表失败：" + e.getMessage());
         }
     }
 
@@ -86,50 +116,57 @@ public class OrderController {
     }
 
     /**
-     * 取消订单
+     * 修改订单状态（通用接口）
+     * 支持的状态值：pending, paid, shipped, completed, cancelled
      * 
      * @param orderId 订单ID
-     * @return 取消结果
+     * @param status  订单状态
+     * @return 修改结果
      */
-    @PutMapping("/cancel/{orderId}")
-    public Result<String> cancelOrder(@PathVariable Integer orderId) {
+    @PutMapping("/status/{orderId}")
+    public Result<String> updateOrderStatus(@PathVariable Integer orderId, @RequestParam String status) {
         try {
-            orderService.cancelOrder(orderId);
-            return Result.success("订单取消成功");
+            // 验证状态值是否合法
+            if (!isValidOrderStatus(status)) {
+                return Result.error("无效的订单状态值");
+            }
+
+            orderService.updateOrderStatus(orderId, status);
+            return Result.success("订单状态修改成功");
         } catch (Exception e) {
-            return Result.error("订单取消失败：" + e.getMessage());
+            return Result.error("订单状态修改失败：" + e.getMessage());
         }
     }
 
     /**
-     * 支付订单
+     * 验证订单状态是否合法
      * 
-     * @param orderId 订单ID
-     * @return 支付结果
+     * @param status 订单状态
+     * @return 是否合法
      */
-    @PutMapping("/pay/{orderId}")
-    public Result<String> payOrder(@PathVariable Integer orderId) {
-        try {
-            orderService.payOrder(orderId);
-            return Result.success("订单支付成功");
-        } catch (Exception e) {
-            return Result.error("订单支付失败：" + e.getMessage());
-        }
+    private boolean isValidOrderStatus(String status) {
+        return "pending".equals(status) ||
+                "paid".equals(status) ||
+                "shipped".equals(status) ||
+                "completed".equals(status) ||
+                "cancelled".equals(status);
     }
 
     /**
-     * 确认收货
+     * 获取订单状态统计
      * 
-     * @param orderId 订单ID
-     * @return 确认结果
+     * @return 订单状态统计数据
      */
-    @PutMapping("/confirm/{orderId}")
-    public Result<String> confirmOrder(@PathVariable Integer orderId) {
+    @GetMapping("/status/statistics")
+    public Result<Map<String, Long>> getOrderStatusStatistics() {
         try {
-            orderService.confirmOrder(orderId);
-            return Result.success("订单确认收货成功");
+            // 从BaseContext中获取当前用户ID
+            Integer userId = BaseContext.getCurrentId().intValue();
+            // 获取订单状态统计
+            Map<String, Long> statistics = orderService.getOrderStatusStatistics(userId);
+            return Result.success(statistics);
         } catch (Exception e) {
-            return Result.error("订单确认收货失败：" + e.getMessage());
+            return Result.error("获取订单状态统计失败：" + e.getMessage());
         }
     }
 }

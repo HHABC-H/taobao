@@ -21,8 +21,15 @@ public interface ProductSkuMapper {
      * @param skuId SKU ID
      * @return SKU信息
      */
-    @Select("SELECT sku_id AS skuId, product_id AS productId, sku_name AS skuName, sku_type AS skuType, price, stock, sold_count AS soldCount, sku_image AS skuImage, status, create_time AS createTime, update_time AS updateTime FROM product_sku WHERE sku_id = #{skuId}")
     ProductSku findById(Integer skuId);
+    
+    /**
+     * 根据SKU ID查询SKU信息，包含商品名称
+     * 
+     * @param skuId SKU ID
+     * @return SKU信息
+     */
+    ProductSku findByIdWithProductInfo(Integer skuId);
 
     /**
      * 根据商品ID查询SKU列表
