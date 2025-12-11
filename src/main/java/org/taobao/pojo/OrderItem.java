@@ -20,9 +20,11 @@ public class OrderItem {
     private Integer orderId; // 订单ID
     private Integer skuId; // SKU ID
     private String productName; // 商品名称
+    private String skuName; // SKU名称
     private String skuType; // 商品规格
     private BigDecimal price; // 单价
     private Integer quantity; // 数量
     private BigDecimal totalPrice; // 总价
     private Date createTime; // 创建时间
+    private String skuImage; // SKU图片
 }

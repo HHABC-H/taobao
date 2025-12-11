@@ -13,7 +13,7 @@ public class ProductSkuUpdateDTO {
     private String skuName; // SKU名称
     private String skuType; // SKU规格分类
     private BigDecimal price; // 价格
-    private Integer stock; // 库存数量
+    private Integer stock; // 库存数量（可选）
     private String skuImage; // SKU图片
     private String status; // 状态：on_sale, off_sale
 }

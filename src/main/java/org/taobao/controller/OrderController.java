@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.taobao.context.BaseContext;
 import org.taobao.dto.OrderCreateDTO;
+import org.taobao.dto.OrderListResponseDTO;
 import org.taobao.dto.OrderQueryDTO;
 import org.taobao.pojo.Result;
 import org.taobao.pojo.Orders;
@@ -48,13 +49,19 @@ public class OrderController {
      * 获取订单列表
      * 
      * @param orderQueryDTO 查询条件
-     * @return 订单列表
+     * @return 订单列表和总订单数
      */
     @GetMapping("/list")
-    public Result<List<Orders>> getOrderList(OrderQueryDTO orderQueryDTO) {
+    public Result<OrderListResponseDTO> getOrderList(OrderQueryDTO orderQueryDTO) {
         try {
             List<Orders> orderList = orderService.getOrderList(orderQueryDTO);
-            return Result.success(orderList);
+            Integer totalCount = orderService.getOrderCount(orderQueryDTO);
+
+            OrderListResponseDTO response = new OrderListResponseDTO();
+            response.setOrders(orderList);
+            response.setTotalCount(totalCount);
+
+            return Result.success(response);
         } catch (Exception e) {
             return Result.error("获取订单列表失败：" + e.getMessage());
         }

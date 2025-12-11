@@ -2,6 +2,7 @@ package org.taobao.service.serviceImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.taobao.constant.ShopStatusConstant;
 import org.taobao.dto.ShopCreateDTO;
 import org.taobao.dto.ShopQueryDTO;
 import org.taobao.dto.ShopStatisticsDTO;
@@ -11,6 +12,13 @@ import org.taobao.exception.ShopNameAlreadyExistsException;
 import org.taobao.mapper.ShopMapper;
 import org.taobao.pojo.Shop;
 import org.taobao.service.ShopService;
+
+import java.util.Arrays;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Date;
 import java.util.List;
@@ -49,26 +57,37 @@ public class ShopServiceImpl implements ShopService {
         if (existingShop != null) {
             throw new ShopNameAlreadyExistsException("店铺名称已存在");
         }
-        
+
         // 检查商家是否已有店铺
         existingShop = shopMapper.findByMerchantId(merchantId);
         if (existingShop != null) {
             throw new RuntimeException("一个商家只能有一个店铺");
         }
-        
+
         // 创建店铺对象
         Shop shop = new Shop();
         shop.setMerchantId(merchantId);
         shop.setShopName(shopCreateDTO.getShopName());
         shop.setShopDescription(shopCreateDTO.getShopDescription());
-        shop.setShopLogo(shopCreateDTO.getShopLogo());
-        shop.setShopBanner(shopCreateDTO.getShopBanner());
+
+        // 处理店铺logo和横幅图片，去除OSS前缀并转换为JSON数组格式存储
+        // 处理店铺logo和横幅图片，存储完整URL
+        if (shopCreateDTO.getShopLogo() != null && !shopCreateDTO.getShopLogo().isEmpty()) {
+            // 存储完整URL
+            shop.setShopLogo(shopCreateDTO.getShopLogo());
+        }
+
+        if (shopCreateDTO.getShopBanner() != null && !shopCreateDTO.getShopBanner().isEmpty()) {
+            // 存储完整URL
+            shop.setShopBanner(shopCreateDTO.getShopBanner());
+        }
+
         shop.setStatus("normal"); // 默认正常状态，创建即激活
-        
+
         Date now = new Date();
         shop.setCreateTime(now);
         shop.setUpdateTime(now);
-        
+
         // 插入数据库
         shopMapper.insert(shop);
     }
@@ -94,13 +113,37 @@ public class ShopServiceImpl implements ShopService {
         if (shopUpdateDTO.getShopDescription() != null) {
             shop.setShopDescription(shopUpdateDTO.getShopDescription());
         }
+
+        // 处理店铺logo和横幅图片，存储完整URL
         if (shopUpdateDTO.getShopLogo() != null) {
-            shop.setShopLogo(shopUpdateDTO.getShopLogo());
+            if (shopUpdateDTO.getShopLogo().isEmpty()) {
+                shop.setShopLogo(null);
+            } else {
+                // 存储完整URL
+                shop.setShopLogo(shopUpdateDTO.getShopLogo());
+            }
         }
+
         if (shopUpdateDTO.getShopBanner() != null) {
-            shop.setShopBanner(shopUpdateDTO.getShopBanner());
+            if (shopUpdateDTO.getShopBanner().isEmpty()) {
+                shop.setShopBanner(null);
+            } else {
+                // 存储完整URL
+                shop.setShopBanner(shopUpdateDTO.getShopBanner());
+            }
         }
+
         if (shopUpdateDTO.getStatus() != null) {
+            // 验证status字段的有效性
+            List<String> validStatuses = Arrays.asList(
+                    ShopStatusConstant.NORMAL,
+                    ShopStatusConstant.CLOSED,
+                    ShopStatusConstant.AUDITING);
+
+            if (!validStatuses.contains(shopUpdateDTO.getStatus())) {
+                throw new IllegalArgumentException("无效的店铺状态值: " + shopUpdateDTO.getStatus());
+            }
+
             shop.setStatus(shopUpdateDTO.getStatus());
         }
 
@@ -132,13 +175,38 @@ public class ShopServiceImpl implements ShopService {
         if (shopUpdateDTO.getShopDescription() != null) {
             shop.setShopDescription(shopUpdateDTO.getShopDescription());
         }
+
+        // 处理店铺logo和横幅图片，存储完整URL
         if (shopUpdateDTO.getShopLogo() != null) {
-            shop.setShopLogo(shopUpdateDTO.getShopLogo());
+            if (shopUpdateDTO.getShopLogo().isEmpty()) {
+                shop.setShopLogo(null);
+            } else {
+                // 存储完整URL
+                shop.setShopLogo(shopUpdateDTO.getShopLogo());
+            }
         }
+
         if (shopUpdateDTO.getShopBanner() != null) {
-            shop.setShopBanner(shopUpdateDTO.getShopBanner());
+            if (shopUpdateDTO.getShopBanner().isEmpty()) {
+                shop.setShopBanner(null);
+            } else {
+                // 存储完整URL
+                shop.setShopBanner(shopUpdateDTO.getShopBanner());
+            }
         }
+
         if (shopUpdateDTO.getStatus() != null) {
+            // 验证status字段的有效性
+            List<String> validStatuses = Arrays.asList(
+                ShopStatusConstant.NORMAL,
+                ShopStatusConstant.CLOSED,
+                ShopStatusConstant.AUDITING
+            );
+            
+            if (!validStatuses.contains(shopUpdateDTO.getStatus())) {
+                throw new IllegalArgumentException("无效的店铺状态值: " + shopUpdateDTO.getStatus());
+            }
+            
             shop.setStatus(shopUpdateDTO.getStatus());
         }
 
@@ -171,11 +239,11 @@ public class ShopServiceImpl implements ShopService {
         if (shop == null) {
             throw new ShopNotFoundException("店铺不存在");
         }
-        
+
         // 更新店铺状态
         shop.setStatus(status);
         shop.setUpdateTime(new Date());
-        
+
         // 更新数据库
         shopMapper.update(shop);
     }
@@ -187,11 +255,11 @@ public class ShopServiceImpl implements ShopService {
         if (shop == null) {
             throw new ShopNotFoundException("店铺不存在");
         }
-        
+
         // 更新店铺状态为关闭
         shop.setStatus("closed");
         shop.setUpdateTime(new Date());
-        
+
         // 更新数据库
         shopMapper.update(shop);
     }
@@ -203,11 +271,11 @@ public class ShopServiceImpl implements ShopService {
         if (shop == null) {
             throw new ShopNotFoundException("店铺不存在");
         }
-        
+
         // 更新店铺状态为正常
         shop.setStatus("normal");
         shop.setUpdateTime(new Date());
-        
+
         // 更新数据库
         shopMapper.update(shop);
     }

@@ -16,6 +16,10 @@ import org.taobao.pojo.Product;
 import org.taobao.pojo.ProductSku;
 import org.taobao.service.ProductService;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -51,6 +55,19 @@ public class ProductServiceImpl implements ProductService {
             // 如果没有页码信息，默认从第0条开始
             productQueryDTO.setOffset(0);
         }
+
+        // 验证和修正排序参数，防止SQL注入和语法错误
+        if (productQueryDTO.getSortBy() == null || productQueryDTO.getSortBy().trim().isEmpty()) {
+            productQueryDTO.setSortBy("create_time");
+        }
+
+        // 确保排序方式只有ASC或DESC两种值
+        if (productQueryDTO.getSortOrder() == null ||
+                (!"asc".equalsIgnoreCase(productQueryDTO.getSortOrder().trim()) &&
+                        !"desc".equalsIgnoreCase(productQueryDTO.getSortOrder().trim()))) {
+            productQueryDTO.setSortOrder("desc");
+        }
+
         List<Product> products = productMapper.getProductList(productQueryDTO);
         // 为每个商品设置第一个SKU的价格
         for (Product product : products) {
@@ -71,8 +88,28 @@ public class ProductServiceImpl implements ProductService {
         Product product = new Product();
         product.setProductName(productCreateDTO.getProductName());
         product.setDescription(productCreateDTO.getDescription());
-        product.setMainImages(productCreateDTO.getMainImages());
-        product.setDetailImages(productCreateDTO.getDetailImages());
+
+        // 处理主图和详情图，去除OSS前缀并直接存储
+        // 处理主图
+        String mainImages = productCreateDTO.getMainImages();
+        if (mainImages != null && !mainImages.isEmpty()) {
+            // 去除OSS前缀
+            if (mainImages.startsWith("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/")) {
+                mainImages = mainImages.substring("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/".length());
+            }
+            product.setMainImages(mainImages);
+        }
+
+        // 处理详情图
+        String detailImages = productCreateDTO.getDetailImages();
+        if (detailImages != null && !detailImages.isEmpty()) {
+            // 去除OSS前缀
+            if (detailImages.startsWith("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/")) {
+                detailImages = detailImages.substring("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/".length());
+            }
+            product.setDetailImages(detailImages);
+        }
+
         product.setCategoryId(productCreateDTO.getCategoryId());
         product.setMerchantId(merchantId);
         product.setShopId(productCreateDTO.getShopId());
@@ -93,8 +130,16 @@ public class ProductServiceImpl implements ProductService {
                 productSku.setSkuName(skuCreateDTO.getSkuName());
                 productSku.setSkuType(skuCreateDTO.getSkuType());
                 productSku.setPrice(skuCreateDTO.getPrice());
-                productSku.setStock(skuCreateDTO.getStock());
-                productSku.setSkuImage(skuCreateDTO.getSkuImage());
+                // 处理可选的库存数量，默认为50
+                productSku.setStock(skuCreateDTO.getStock() != null ? skuCreateDTO.getStock() : 50);
+
+                // 处理SKU图片，去除OSS前缀
+                String skuImage = skuCreateDTO.getSkuImage();
+                if (skuImage != null && skuImage.startsWith("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/")) {
+                    skuImage = skuImage.substring("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/".length());
+                }
+                productSku.setSkuImage(skuImage);
+
                 productSku.setStatus("on_sale"); // 默认上架状态
                 productSku.setCreateTime(now);
                 productSku.setUpdateTime(now);
@@ -116,8 +161,32 @@ public class ProductServiceImpl implements ProductService {
         // 更新商品基本信息
         product.setProductName(productUpdateDTO.getProductName());
         product.setDescription(productUpdateDTO.getDescription());
-        product.setMainImages(productUpdateDTO.getMainImages());
-        product.setDetailImages(productUpdateDTO.getDetailImages());
+
+        // 处理主图和详情图，去除OSS前缀并直接存储
+        // 处理主图
+        String mainImages = productUpdateDTO.getMainImages();
+        if (mainImages != null && !mainImages.isEmpty()) {
+            // 去除OSS前缀
+            if (mainImages.startsWith("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/")) {
+                mainImages = mainImages.substring("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/".length());
+            }
+            product.setMainImages(mainImages);
+        } else {
+            product.setMainImages(null);
+        }
+
+        // 处理详情图
+        String detailImages = productUpdateDTO.getDetailImages();
+        if (detailImages != null && !detailImages.isEmpty()) {
+            // 去除OSS前缀
+            if (detailImages.startsWith("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/")) {
+                detailImages = detailImages.substring("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/".length());
+            }
+            product.setDetailImages(detailImages);
+        } else {
+            product.setDetailImages(null);
+        }
+
         product.setCategoryId(productUpdateDTO.getCategoryId());
         product.setStatus(productUpdateDTO.getStatus());
         product.setUpdateTime(new Date());
@@ -137,8 +206,19 @@ public class ProductServiceImpl implements ProductService {
                 productSku.setSkuName(skuUpdateDTO.getSkuName());
                 productSku.setSkuType(skuUpdateDTO.getSkuType());
                 productSku.setPrice(skuUpdateDTO.getPrice());
-                productSku.setStock(skuUpdateDTO.getStock());
-                productSku.setSkuImage(skuUpdateDTO.getSkuImage());
+
+                // 处理可选的库存数量，只有当提供了新的库存值时才更新
+                if (skuUpdateDTO.getStock() != null) {
+                    productSku.setStock(skuUpdateDTO.getStock());
+                }
+
+                // 处理SKU图片，去除OSS前缀
+                String skuImage = skuUpdateDTO.getSkuImage();
+                if (skuImage != null && skuImage.startsWith("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/")) {
+                    skuImage = skuImage.substring("https://taobao-hqh.oss-cn-beijing.aliyuncs.com/".length());
+                }
+                productSku.setSkuImage(skuImage);
+
                 productSku.setStatus(skuUpdateDTO.getStatus());
                 productSku.setUpdateTime(new Date());
 
@@ -202,6 +282,19 @@ public class ProductServiceImpl implements ProductService {
             // 如果没有页码信息，默认从第0条开始
             productQueryDTO.setOffset(0);
         }
+
+        // 验证和修正排序参数，防止SQL注入和语法错误
+        if (productQueryDTO.getSortBy() == null || productQueryDTO.getSortBy().trim().isEmpty()) {
+            productQueryDTO.setSortBy("create_time");
+        }
+
+        // 确保排序方式只有ASC或DESC两种值
+        if (productQueryDTO.getSortOrder() == null ||
+                (!"asc".equalsIgnoreCase(productQueryDTO.getSortOrder().trim()) &&
+                        !"desc".equalsIgnoreCase(productQueryDTO.getSortOrder().trim()))) {
+            productQueryDTO.setSortOrder("desc");
+        }
+
         // 设置店铺ID到查询条件中
         productQueryDTO.setShopId(shopId);
         return productMapper.getShopProductList(productQueryDTO);
@@ -259,5 +352,54 @@ public class ProductServiceImpl implements ProductService {
             throw new ProductNotFoundException("商品不存在");
         }
         return product;
+    }
+
+    @Override
+    public void addSku(ProductSku productSku) {
+        // 设置创建时间和更新时间
+        Date now = new Date();
+        productSku.setCreateTime(now);
+        productSku.setUpdateTime(now);
+        
+        // 如果未设置状态，默认为on_sale
+        if (productSku.getStatus() == null || productSku.getStatus().isEmpty()) {
+            productSku.setStatus("on_sale");
+        }
+        
+        // 插入SKU
+        productSkuMapper.insert(productSku);
+    }
+
+    @Override
+    public void updateSku(Integer skuId, ProductSku productSku) {
+        // 检查SKU是否存在
+        ProductSku existingSku = productSkuMapper.findById(skuId);
+        if (existingSku == null) {
+            throw new ProductNotFoundException("SKU不存在");
+        }
+
+        // 更新SKU信息
+        existingSku.setSkuName(productSku.getSkuName());
+        existingSku.setSkuType(productSku.getSkuType());
+        existingSku.setPrice(productSku.getPrice());
+        existingSku.setStock(productSku.getStock());
+        existingSku.setSkuImage(productSku.getSkuImage());
+        existingSku.setStatus(productSku.getStatus());
+        existingSku.setUpdateTime(new Date());
+
+        // 更新SKU
+        productSkuMapper.update(existingSku);
+    }
+
+    @Override
+    public void deleteSku(Integer skuId) {
+        // 检查SKU是否存在
+        ProductSku existingSku = productSkuMapper.findById(skuId);
+        if (existingSku == null) {
+            throw new ProductNotFoundException("SKU不存在");
+        }
+
+        // 删除SKU
+        productSkuMapper.delete(skuId);
     }
 }

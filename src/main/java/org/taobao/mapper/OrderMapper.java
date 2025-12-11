@@ -36,6 +36,14 @@ public interface OrderMapper {
     List<Orders> getOrderList(OrderQueryDTO orderQueryDTO);
 
     /**
+     * 获取订单总数
+     * 
+     * @param orderQueryDTO 查询条件
+     * @return 订单总数
+     */
+    Integer getOrderCount(OrderQueryDTO orderQueryDTO);
+
+    /**
      * 根据ID获取订单
      * 
      * @param orderId 订单ID
@@ -50,6 +58,15 @@ public interface OrderMapper {
      * @return 订单商品项列表
      */
     List<OrderItem> getOrderItemsByOrderId(Integer orderId);
+
+    /**
+     * 根据订单ID和店铺ID获取订单商品项
+     * 
+     * @param orderId 订单ID
+     * @param shopId  店铺ID
+     * @return 订单商品项列表
+     */
+    List<OrderItem> getOrderItemsByOrderIdAndShopId(@Param("orderId") Integer orderId, @Param("shopId") Integer shopId);
 
     /**
      * 更新订单状态

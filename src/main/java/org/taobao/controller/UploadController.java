@@ -219,4 +219,210 @@ public class UploadController {
             return Result.error("商品图片格式化上传失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 上传商品主图（仅上传图片，不直接关联商品）
+     * 
+     * @param file 上传的文件
+     * @return 上传结果，包含图片的相对路径
+     */
+    @PostMapping("/upload/product/main-image")
+    public Result<String> uploadProductMainImage(
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("接收到商品主图上传请求");
+
+            if (file == null || file.isEmpty()) {
+                log.error("上传文件为空");
+                return Result.error("上传文件不能为空");
+            }
+
+            log.info("上传文件名：{}，大小：{}字节", file.getOriginalFilename(), file.getSize());
+
+            // 调用OSS上传工具
+            String ossUrl = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+
+            log.info("文件上传成功，URL：{}", ossUrl);
+
+            // 截取URL前缀，只保留相对路径部分
+            // 例如：https://bucket-name.oss-region.aliyuncs.com/2025/12/xxx.jpg ->
+            // 2025/12/xxx.jpg
+            String relativePath = ossUrl;
+            if (ossUrl.startsWith("http://") || ossUrl.startsWith("https://")) {
+                // 找到第一个斜杠后的两个斜杠位置（https://），然后取后面的部分
+                int startIndex = ossUrl.indexOf("//") + 2;
+                // 找到域名后的第一个斜杠位置
+                int pathStartIndex = ossUrl.indexOf("/", startIndex);
+                if (pathStartIndex != -1) {
+                    relativePath = ossUrl.substring(pathStartIndex + 1);
+                }
+            }
+            log.info("截取后的相对路径：{}", relativePath);
+
+            return Result.success(relativePath);
+        } catch (Exception e) {
+            log.error("商品主图上传失败：", e);
+            return Result.error("商品主图上传失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传商品详情图（仅上传图片，不直接关联商品）
+     * 
+     * @param file 上传的文件
+     * @return 上传结果，包含图片的相对路径
+     */
+    @PostMapping("/upload/product/detail-image")
+    public Result<String> uploadProductDetailImage(
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            log.info("接收到商品详情图上传请求");
+
+            if (file == null || file.isEmpty()) {
+                log.error("上传文件为空");
+                return Result.error("上传文件不能为空");
+            }
+
+            log.info("上传文件名：{}，大小：{}字节", file.getOriginalFilename(), file.getSize());
+
+            // 调用OSS上传工具
+            String ossUrl = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+
+            log.info("文件上传成功，URL：{}", ossUrl);
+
+            // 截取URL前缀，只保留相对路径部分
+            // 例如：https://bucket-name.oss-region.aliyuncs.com/2025/12/xxx.jpg ->
+            // 2025/12/xxx.jpg
+            String relativePath = ossUrl;
+            if (ossUrl.startsWith("http://") || ossUrl.startsWith("https://")) {
+                // 找到第一个斜杠后的两个斜杠位置（https://），然后取后面的部分
+                int startIndex = ossUrl.indexOf("//") + 2;
+                // 找到域名后的第一个斜杠位置
+                int pathStartIndex = ossUrl.indexOf("/", startIndex);
+                if (pathStartIndex != -1) {
+                    relativePath = ossUrl.substring(pathStartIndex + 1);
+                }
+            }
+            log.info("截取后的相对路径：{}", relativePath);
+
+            return Result.success(relativePath);
+        } catch (Exception e) {
+            log.error("商品详情图上传失败：", e);
+            return Result.error("商品详情图上传失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量上传商品主图（仅上传图片，不直接关联商品）
+     * 
+     * @param files 上传的文件数组
+     * @return 上传结果，包含图片相对路径的列表
+     */
+    @PostMapping("/upload/product/main-images")
+    public Result<List<String>> uploadProductMainImages(
+            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        try {
+            log.info("接收到批量商品主图上传请求");
+
+            if (files == null || files.length == 0) {
+                log.error("上传文件数组为空");
+                return Result.error("上传文件不能为空");
+            }
+
+            List<String> relativePaths = new ArrayList<>();
+
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) {
+                    log.warn("跳过空文件");
+                    continue;
+                }
+
+                log.info("上传文件名：{}，大小：{}字节", file.getOriginalFilename(), file.getSize());
+
+                // 调用OSS上传工具
+                String ossUrl = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+                log.info("文件上传成功，URL：{}", ossUrl);
+
+                // 截取URL前缀，只保留相对路径部分
+                String relativePath = ossUrl;
+                if (ossUrl.startsWith("http://") || ossUrl.startsWith("https://")) {
+                    int startIndex = ossUrl.indexOf("//") + 2;
+                    int pathStartIndex = ossUrl.indexOf("/", startIndex);
+                    if (pathStartIndex != -1) {
+                        relativePath = ossUrl.substring(pathStartIndex + 1);
+                    }
+                }
+                log.info("截取后的相对路径：{}", relativePath);
+
+                relativePaths.add(relativePath);
+            }
+
+            if (relativePaths.isEmpty()) {
+                log.error("没有成功上传的文件");
+                return Result.error("没有成功上传的文件");
+            }
+
+            return Result.success(relativePaths);
+        } catch (Exception e) {
+            log.error("批量商品主图上传失败：", e);
+            return Result.error("批量商品主图上传失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量上传商品详情图（仅上传图片，不直接关联商品）
+     * 
+     * @param files 上传的文件数组
+     * @return 上传结果，包含图片相对路径的列表
+     */
+    @PostMapping("/upload/product/detail-images")
+    public Result<List<String>> uploadProductDetailImages(
+            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+        try {
+            log.info("接收到批量商品详情图上传请求");
+
+            if (files == null || files.length == 0) {
+                log.error("上传文件数组为空");
+                return Result.error("上传文件不能为空");
+            }
+
+            List<String> relativePaths = new ArrayList<>();
+
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) {
+                    log.warn("跳过空文件");
+                    continue;
+                }
+
+                log.info("上传文件名：{}，大小：{}字节", file.getOriginalFilename(), file.getSize());
+
+                // 调用OSS上传工具
+                String ossUrl = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+                log.info("文件上传成功，URL：{}", ossUrl);
+
+                // 截取URL前缀，只保留相对路径部分
+                String relativePath = ossUrl;
+                if (ossUrl.startsWith("http://") || ossUrl.startsWith("https://")) {
+                    int startIndex = ossUrl.indexOf("//") + 2;
+                    int pathStartIndex = ossUrl.indexOf("/", startIndex);
+                    if (pathStartIndex != -1) {
+                        relativePath = ossUrl.substring(pathStartIndex + 1);
+                    }
+                }
+                log.info("截取后的相对路径：{}", relativePath);
+
+                relativePaths.add(relativePath);
+            }
+
+            if (relativePaths.isEmpty()) {
+                log.error("没有成功上传的文件");
+                return Result.error("没有成功上传的文件");
+            }
+
+            return Result.success(relativePaths);
+        } catch (Exception e) {
+            log.error("批量商品详情图上传失败：", e);
+            return Result.error("批量商品详情图上传失败：" + e.getMessage());
+        }
+    }
 }

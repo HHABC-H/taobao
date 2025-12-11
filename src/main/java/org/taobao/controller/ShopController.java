@@ -9,6 +9,7 @@ import org.taobao.dto.ShopCreateDTO;
 import org.taobao.dto.ShopQueryDTO;
 import org.taobao.dto.ShopStatisticsDTO;
 import org.taobao.dto.ShopUpdateDTO;
+import org.taobao.dto.ShopDTO;
 import org.taobao.exception.ShopNotFoundException;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.Product;
@@ -17,11 +18,14 @@ import org.taobao.pojo.Shop;
 import org.taobao.service.OrderService;
 import org.taobao.service.ProductService;
 import org.taobao.service.ShopService;
+import org.taobao.utils.AliyunOSSOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 店铺Controller
@@ -39,6 +43,9 @@ public class ShopController {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private AliyunOSSOperator aliyunOSSOperator;
+
     /**
      * 根据店铺ID获取店铺信息
      * 
@@ -46,10 +53,11 @@ public class ShopController {
      * @return 店铺信息
      */
     @GetMapping("/{shopId}")
-    public Result<Shop> getShopById(@PathVariable Integer shopId) {
+    public Result<ShopDTO> getShopById(@PathVariable Integer shopId) {
         try {
             Shop shop = shopService.getShopById(shopId);
-            return Result.success(shop);
+            ShopDTO shopDTO = ShopDTO.fromShop(shop);
+            return Result.success(shopDTO);
         } catch (Exception e) {
             return Result.error("获取店铺信息失败：" + e.getMessage());
         }
@@ -61,12 +69,13 @@ public class ShopController {
      * @return 店铺信息，如果不存在返回null
      */
     @GetMapping("/my")
-    public Result<Shop> getMyShop() {
+    public Result<ShopDTO> getMyShop() {
         try {
             // 从BaseContext中获取当前用户ID
             Integer merchantId = BaseContext.getCurrentId().intValue();
             Shop shop = shopService.getShopByMerchantId(merchantId);
-            return Result.success(shop);
+            ShopDTO shopDTO = ShopDTO.fromShop(shop);
+            return Result.success(shopDTO);
         } catch (ShopNotFoundException e) {
             // 店铺不存在时返回null，而不是500错误
             return Result.success(null);
@@ -106,6 +115,8 @@ public class ShopController {
             Integer merchantId = BaseContext.getCurrentId().intValue();
             shopService.updateShopByMerchantId(merchantId, shopUpdateDTO);
             return Result.success("店铺信息更新成功");
+        } catch (IllegalArgumentException e) {
+            return Result.error("店铺信息更新失败：" + e.getMessage());
         } catch (Exception e) {
             return Result.error("店铺信息更新失败：" + e.getMessage());
         }
@@ -118,10 +129,15 @@ public class ShopController {
      * @return 店铺列表
      */
     @GetMapping("/list")
-    public Result<List<Shop>> getShopList(ShopQueryDTO shopQueryDTO) {
+    public Result<List<ShopDTO>> getShopList(ShopQueryDTO shopQueryDTO) {
         try {
             List<Shop> shopList = shopService.getShopList(shopQueryDTO);
-            return Result.success(shopList);
+            // 转换为ShopDTO列表
+            List<ShopDTO> shopDTOList = new java.util.ArrayList<>();
+            for (Shop shop : shopList) {
+                shopDTOList.add(ShopDTO.fromShop(shop));
+            }
+            return Result.success(shopDTOList);
         } catch (Exception e) {
             return Result.error("获取店铺列表失败：" + e.getMessage());
         }
@@ -322,8 +338,8 @@ public class ShopController {
     public Result<String> addSku(@RequestBody org.taobao.pojo.ProductSku sku) {
         try {
             // 调用服务层添加SKU
-            // 注意：这里需要ProductService中添加addSku方法
-            return Result.error("暂未实现添加SKU功能");
+            productService.addSku(sku);
+            return Result.success("添加SKU成功");
         } catch (Exception e) {
             return Result.error("添加SKU失败：" + e.getMessage());
         }
@@ -340,8 +356,8 @@ public class ShopController {
     public Result<String> updateSku(@PathVariable Integer skuId, @RequestBody org.taobao.pojo.ProductSku sku) {
         try {
             // 调用服务层更新SKU
-            // 注意：这里需要ProductService中添加updateSku方法
-            return Result.error("暂未实现更新SKU功能");
+            productService.updateSku(skuId, sku);
+            return Result.success("更新SKU成功");
         } catch (Exception e) {
             return Result.error("更新SKU失败：" + e.getMessage());
         }
@@ -357,8 +373,8 @@ public class ShopController {
     public Result<String> deleteSku(@PathVariable Integer skuId) {
         try {
             // 调用服务层删除SKU
-            // 注意：这里需要ProductService中添加deleteSku方法
-            return Result.error("暂未实现删除SKU功能");
+            productService.deleteSku(skuId);
+            return Result.success("删除SKU成功");
         } catch (Exception e) {
             return Result.error("删除SKU失败：" + e.getMessage());
         }
@@ -428,4 +444,161 @@ public class ShopController {
             return Result.error("商家发货失败：" + e.getMessage());
         }
     }
+
+    /**
+     * 上传店铺logo
+     * 
+     * @param logo 店铺logo文件
+     * @return 相对路径
+     */
+    @PostMapping("/logo/upload")
+    public Result<String> uploadShopLogo(@RequestPart("logo") MultipartFile logo) {
+        try {
+            // 从BaseContext中获取当前用户ID
+            Integer merchantId = BaseContext.getCurrentId().intValue();
+
+            // 生成唯一文件名
+            String originalFilename = logo.getOriginalFilename();
+            String extName = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + extName;
+
+            // 上传文件到OSS
+            String fullLogoUrl = aliyunOSSOperator.upload(logo.getBytes(), uniqueFileName);
+
+            // 提取关键字符（去掉前缀，只保留yyyy/MM/xxx.jpg部分）
+            // 从完整URL中提取objectName，格式为：yyyy/MM/UUID.xxx
+            // 完整URL格式：https://bucket-name.oss-region.aliyuncs.com/yyyy/MM/UUID.xxx
+            // 找到第4个斜杠的位置，即域名后的第一个斜杠
+            int firstSlashIndex = fullLogoUrl.indexOf("/");
+            firstSlashIndex = fullLogoUrl.indexOf("/", firstSlashIndex + 1);
+            firstSlashIndex = fullLogoUrl.indexOf("/", firstSlashIndex + 1);
+
+            // 提取从第4个斜杠开始的所有内容，即 yyyy/MM/UUID.xxx
+            String objectName = fullLogoUrl.substring(firstSlashIndex + 1);
+
+            // 更新店铺logo
+            ShopUpdateDTO shopUpdateDTO = new ShopUpdateDTO();
+            shopUpdateDTO.setShopLogo(fullLogoUrl);
+            shopService.updateShopByMerchantId(merchantId, shopUpdateDTO);
+
+            // 返回成功提示和关键字符
+            return Result.success(objectName);
+        } catch (Exception e) {
+            return Result.error("上传店铺logo失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传店铺横幅
+     * 
+     * @param banner 店铺横幅文件
+     * @return 相对路径
+     */
+    @PostMapping("/banner/upload")
+    public Result<String> uploadShopBanner(@RequestPart("banner") MultipartFile banner) {
+        try {
+            // 从BaseContext中获取当前用户ID
+            Integer merchantId = BaseContext.getCurrentId().intValue();
+
+            // 生成唯一文件名
+            String originalFilename = banner.getOriginalFilename();
+            String extName = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String uniqueFileName = UUID.randomUUID().toString().replace("-", "") + extName;
+
+            // 上传文件到OSS
+            String fullBannerUrl = aliyunOSSOperator.upload(banner.getBytes(), uniqueFileName);
+
+            // 提取关键字符（去掉前缀，只保留yyyy/MM/xxx.jpg部分）
+            // 从完整URL中提取objectName，格式为：yyyy/MM/UUID.xxx
+            // 完整URL格式：https://bucket-name.oss-region.aliyuncs.com/yyyy/MM/UUID.xxx
+            // 找到第4个斜杠的位置，即域名后的第一个斜杠
+            int firstSlashIndex = fullBannerUrl.indexOf("/");
+            firstSlashIndex = fullBannerUrl.indexOf("/", firstSlashIndex + 1);
+            firstSlashIndex = fullBannerUrl.indexOf("/", firstSlashIndex + 1);
+
+            // 提取从第4个斜杠开始的所有内容，即 yyyy/MM/UUID.xxx
+            String objectName = fullBannerUrl.substring(firstSlashIndex + 1);
+
+            // 更新店铺横幅
+            ShopUpdateDTO shopUpdateDTO = new ShopUpdateDTO();
+            shopUpdateDTO.setShopBanner(fullBannerUrl);
+            shopService.updateShopByMerchantId(merchantId, shopUpdateDTO);
+
+            // 返回成功提示和关键字符
+            return Result.success(objectName);
+        } catch (Exception e) {
+            return Result.error("上传店铺横幅失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传商品主图（仅上传图片，不直接关联商品）
+     * 
+     * @param file 上传的文件
+     * @return 上传结果，包含图片的相对路径
+     */
+    @PostMapping("/product/main-image/upload")
+    public Result<String> uploadProductMainImage(
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return Result.error("上传文件不能为空");
+            }
+
+            // 调用OSS上传工具
+            String ossUrl = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+
+            // 截取URL前缀，只保留相对路径部分
+            // 例如：https://bucket-name.oss-region.aliyuncs.com/2025/12/xxx.jpg ->
+            // 2025/12/xxx.jpg
+            String relativePath = ossUrl;
+            if (ossUrl.startsWith("http://") || ossUrl.startsWith("https://")) {
+                // 找到第一个斜杠后的两个斜杠位置（https://），然后取后面的部分
+                int startIndex = ossUrl.indexOf("//") + 2;
+                // 找到域名后的第一个斜杠位置
+                int pathStartIndex = ossUrl.indexOf("/", startIndex);
+                if (pathStartIndex != -1) {
+                    relativePath = ossUrl.substring(pathStartIndex + 1);
+                }
+            }
+
+            return Result.success(relativePath);
+        } catch (Exception e) {
+            return Result.error("商品主图上传失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 上传商品详情图（仅上传图片，不直接关联商品）
+     * 
+     * @param file 上传的文件
+     * @return 上传结果，包含图片的相对路径
+     */
+    @PostMapping("/product/detail-image/upload")
+    public Result<String> uploadProductDetailImage(
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return Result.error("上传文件不能为空");
+            }
+
+            // 调用OSS上传工具
+            String ossUrl = aliyunOSSOperator.upload(file.getBytes(), file.getOriginalFilename());
+
+            // 截取URL前缀，只保留相对路径部分
+            String relativePath = ossUrl;
+            if (ossUrl.startsWith("http://") || ossUrl.startsWith("https://")) {
+                int startIndex = ossUrl.indexOf("//") + 2;
+                int pathStartIndex = ossUrl.indexOf("/", startIndex);
+                if (pathStartIndex != -1) {
+                    relativePath = ossUrl.substring(pathStartIndex + 1);
+                }
+            }
+
+            return Result.success(relativePath);
+        } catch (Exception e) {
+            return Result.error("商品详情图上传失败：" + e.getMessage());
+        }
+    }
+
 }

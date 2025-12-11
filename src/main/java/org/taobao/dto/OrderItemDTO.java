@@ -9,6 +9,7 @@ import lombok.Data;
 public class OrderItemDTO {
     private Integer productId; // 商品ID
     private Integer skuId; // SKU ID
+    private String skuName; // SKU名称
     private Integer quantity; // 购买数量
     private Double price; // 商品单价
 }

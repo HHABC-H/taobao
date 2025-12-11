@@ -106,4 +106,26 @@ public interface ProductService {
      * @return 商品详情及SKU信息
      */
     Product findProductDetail(Integer productId);
+    
+    /**
+     * 添加商品SKU
+     * 
+     * @param productSku SKU信息
+     */
+    void addSku(ProductSku productSku);
+
+    /**
+     * 更新商品SKU
+     * 
+     * @param skuId      SKU ID
+     * @param productSku SKU信息
+     */
+    void updateSku(Integer skuId, ProductSku productSku);
+
+    /**
+     * 删除商品SKU
+     * 
+     * @param skuId SKU ID
+     */
+    void deleteSku(Integer skuId);
 }

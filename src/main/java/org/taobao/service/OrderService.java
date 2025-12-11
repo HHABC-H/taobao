@@ -30,6 +30,14 @@ public interface OrderService {
     List<Orders> getOrderList(OrderQueryDTO orderQueryDTO);
 
     /**
+     * 获取订单总数
+     * 
+     * @param orderQueryDTO 查询条件
+     * @return 订单总数
+     */
+    Integer getOrderCount(OrderQueryDTO orderQueryDTO);
+
+    /**
      * 获取订单详情
      * 
      * @param orderId 订单ID

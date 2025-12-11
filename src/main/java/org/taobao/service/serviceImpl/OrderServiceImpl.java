@@ -105,8 +105,9 @@ public class OrderServiceImpl implements OrderService {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(orders.getOrderId());
             orderItem.setSkuId(itemDTO.getSkuId());
-            // 设置商品名称和SKU类型
+            // 设置商品名称、SKU名称和SKU类型
             orderItem.setProductName(sku.getProductName()); // 使用SPU商品名称
+            orderItem.setSkuName(sku.getSkuName()); // 设置SKU名称
             orderItem.setSkuType(sku.getSkuType());
             orderItem.setQuantity(itemDTO.getQuantity());
             orderItem.setPrice(BigDecimal.valueOf(itemDTO.getPrice()));
@@ -138,7 +139,14 @@ public class OrderServiceImpl implements OrderService {
 
         // 为每个订单加载订单项信息并处理收货人信息
         for (Orders order : ordersList) {
-            List<OrderItem> orderItems = orderMapper.getOrderItemsByOrderId(order.getOrderId());
+            List<OrderItem> orderItems;
+            // 如果是查询店铺订单，则只获取该店铺的商品项
+            if (orderQueryDTO.getShopId() != null) {
+                orderItems = orderMapper.getOrderItemsByOrderIdAndShopId(order.getOrderId(), orderQueryDTO.getShopId());
+            } else {
+                // 否则获取订单的所有商品项
+                orderItems = orderMapper.getOrderItemsByOrderId(order.getOrderId());
+            }
             order.setOrderItems(orderItems);
 
             // 从用户地址表中获取收货人姓名和电话
@@ -146,6 +154,17 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return ordersList;
+    }
+
+    @Override
+    public Integer getOrderCount(OrderQueryDTO orderQueryDTO) {
+        // 如果未指定用户ID，则使用当前登录用户ID
+        if (orderQueryDTO.getUserId() == null) {
+            orderQueryDTO.setUserId(BaseContext.getCurrentId().intValue());
+        }
+
+        // 获取订单总数
+        return orderMapper.getOrderCount(orderQueryDTO);
     }
 
     /**

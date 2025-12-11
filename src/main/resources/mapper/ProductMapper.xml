@@ -105,7 +105,7 @@
                 AND p.status = #{status}
             </if>
         </where>
-        ORDER BY p.${sortBy} p.${sortOrder}
+        ORDER BY p.${sortBy} ${sortOrder}
         LIMIT #{offset}, #{pageSize}
     </select>
     
