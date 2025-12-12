@@ -90,4 +90,12 @@ public interface ProductMapper {
      * @return 商品详情及SKU信息
      */
     Product findProductDetail(Integer productId);
+    
+    /**
+     * 根据店铺ID查询商品详情列表及SKU信息
+     * 
+     * @param shopId 店铺ID
+     * @return 商品详情列表及SKU信息
+     */
+    List<Product> getProductDetailsByShopId(Integer shopId);
 }

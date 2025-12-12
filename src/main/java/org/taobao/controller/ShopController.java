@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -86,7 +87,7 @@ public class ShopController {
 
     /**
      * 创建店铺
-     * 
+     *
      * @param shopCreateDTO 店铺创建信息
      * @return 创建结果
      */
@@ -124,7 +125,7 @@ public class ShopController {
 
     /**
      * 获取店铺列表
-     * 
+     *
      * @param shopQueryDTO 查询条件
      * @return 店铺列表
      */
@@ -145,7 +146,7 @@ public class ShopController {
 
     /**
      * 获取店铺统计信息
-     * 
+     *
      * @param shopId 店铺ID
      * @return 店铺统计信息
      */
@@ -161,7 +162,7 @@ public class ShopController {
 
     /**
      * 获取当前商家店铺的统计信息
-     * 
+     *
      * @return 店铺统计信息，如果店铺不存在返回null
      */
     @GetMapping("/statistics/my")
@@ -184,7 +185,7 @@ public class ShopController {
 
     /**
      * 审核店铺
-     * 
+     *
      * @param shopId 店铺ID
      * @param status 审核状态：normal-通过，closed-拒绝
      * @return 审核结果
@@ -217,7 +218,7 @@ public class ShopController {
 
     /**
      * 重新开店
-     * 
+     *
      * @param shopId 店铺ID
      * @return 重新开店结果
      */
@@ -601,4 +602,22 @@ public class ShopController {
         }
     }
 
+    /**
+     * 根据商品ID获取商品详情列表（包含SKU信息）
+     * 
+     * @param productId 商品ID
+     * @return 商品详情列表（包含SKU信息）
+     */
+    @GetMapping("/products/{productId}")
+    public Result<List<Product>> getProductDetailsByProductId(@PathVariable Integer productId) {
+        try {
+            // 创建只有一个元素的列表
+            Product product = productService.findProductDetail(productId);
+            List<Product> productList = new ArrayList<>();
+            productList.add(product);
+            return Result.success(productList);
+        } catch (Exception e) {
+            return Result.error("获取商品详情失败：" + e.getMessage());
+        }
+    }
 }

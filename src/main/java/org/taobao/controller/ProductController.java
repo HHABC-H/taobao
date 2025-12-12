@@ -136,29 +136,28 @@ public class ProductController {
                 }
             }
 
-            // 处理SKU及其图片
+            // 处理SKU图片
+            List<String> skuImagePaths = new ArrayList<>();
             if (productCreateDTO.getSkus() != null && !productCreateDTO.getSkus().isEmpty() &&
                     skuImageFiles != null && skuImageFiles.length > 0) {
-                // 确保SKU图片文件数量与SKU数量一致
-                int skuCount = productCreateDTO.getSkus().size();
-                for (int i = 0; i < skuCount && i < skuImageFiles.length; i++) {
-                    ProductSkuCreateDTO skuCreateDTO = productCreateDTO.getSkus().get(i);
-                    MultipartFile skuImageFile = skuImageFiles[i];
-
-                    // 上传SKU图片
+                // 上传SKU图片并收集路径
+                for (MultipartFile skuImageFile : skuImageFiles) {
                     if (skuImageFile != null && !skuImageFile.isEmpty()) {
                         String ossUrl = aliyunOSSOperator.upload(
                                 skuImageFile.getBytes(),
                                 skuImageFile.getOriginalFilename());
                         // 提取相对路径
                         String relativePath = extractRelativePath(ossUrl);
-                        skuCreateDTO.setSkuImage(relativePath);
+                        skuImagePaths.add(relativePath);
+                    } else {
+                        skuImagePaths.add(null); // 占位符，保证索引一致性
                     }
                 }
             }
 
-            // 调用服务层创建商品
-            productService.createProduct(productCreateDTO);
+            // 调用服务层创建商品和SKU（包含SKU图片），整个过程在事务控制下进行
+            productService.createProductWithSkuImages(productCreateDTO, skuImagePaths);
+
             return Result.success("商品创建成功");
         } catch (Exception e) {
             return Result.error("商品创建失败：" + e.getMessage());

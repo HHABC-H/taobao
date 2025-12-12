@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.taobao.mapper.ProductSkuMapper">
+
+    <!-- SKU基础结果映射 -->
+    <resultMap id="SkuResultMap" type="org.taobao.pojo.ProductSku">
+        <id column="sku_id" property="skuId" />
+        <result column="product_id" property="productId" />
+        <result column="sku_name" property="skuName" />
+        <result column="sku_type" property="skuType" />
+        <result column="price" property="price" />
+        <result column="stock" property="stock" />
+        <result column="sold_count" property="soldCount" />
+        <result column="sku_image" property="skuImage" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- SKU结果映射，包含商品名称 -->
+    <resultMap id="SkuWithProductResultMap" type="org.taobao.pojo.ProductSku">
+        <id column="sku_id" property="skuId" />
+        <result column="product_id" property="productId" />
+        <result column="product_name" property="productName" />
+        <result column="sku_name" property="skuName" />
+        <result column="sku_type" property="skuType" />
+        <result column="price" property="price" />
+        <result column="stock" property="stock" />
+        <result column="sold_count" property="soldCount" />
+        <result column="sku_image" property="skuImage" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 根据SKU ID查询SKU信息 -->
+    <select id="findById" resultMap="SkuResultMap" parameterType="java.lang.Integer">
+        SELECT 
+            sku_id,
+            product_id,
+            sku_name,
+            sku_type,
+            price,
+            stock,
+            sold_count,
+            sku_image,
+            status,
+            create_time,
+            update_time
+        FROM product_sku
+        WHERE sku_id = #{skuId}
+    </select>
+
+    <!-- 根据SKU ID查询SKU信息，包含商品名称 -->
+    <select id="findByIdWithProductInfo" resultMap="SkuWithProductResultMap" parameterType="java.lang.Integer">
+        SELECT 
+            ps.sku_id,
+            ps.product_id,
+            p.product_name,
+            ps.sku_name,
+            ps.sku_type,
+            ps.price,
+            ps.stock,
+            ps.sold_count,
+            ps.sku_image,
+            ps.status,
+            ps.create_time,
+            ps.update_time
+        FROM product_sku ps
+        LEFT JOIN product p ON ps.product_id = p.product_id
+        WHERE ps.sku_id = #{skuId}
+    </select>
+
+</mapper>

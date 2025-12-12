@@ -2,6 +2,7 @@ package org.taobao.service.serviceImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.taobao.context.BaseContext;
 import org.taobao.dto.HomeProductQueryDTO;
 import org.taobao.dto.ProductCreateDTO;
@@ -80,7 +81,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void createProduct(ProductCreateDTO productCreateDTO) {
+    @Transactional
+    public Product createProduct(ProductCreateDTO productCreateDTO) {
         // 从BaseContext中获取当前用户ID
         Integer merchantId = BaseContext.getCurrentId().intValue();
 
@@ -148,6 +150,9 @@ public class ProductServiceImpl implements ProductService {
                 productSkuMapper.insert(productSku);
             }
         }
+
+        // 返回创建的商品对象
+        return product;
     }
 
     @Override
@@ -360,12 +365,12 @@ public class ProductServiceImpl implements ProductService {
         Date now = new Date();
         productSku.setCreateTime(now);
         productSku.setUpdateTime(now);
-        
+
         // 如果未设置状态，默认为on_sale
         if (productSku.getStatus() == null || productSku.getStatus().isEmpty()) {
             productSku.setStatus("on_sale");
         }
-        
+
         // 插入SKU
         productSkuMapper.insert(productSku);
     }
@@ -392,6 +397,27 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public void updateSkuImagesForNewProduct(Integer productId, List<String> skuImagePaths) {
+        // 获取该商品的所有SKU
+        List<ProductSku> skus = productSkuMapper.findByProductId(productId);
+
+        // 更新SKU图片
+        if (skus != null && !skus.isEmpty() && skuImagePaths != null && !skuImagePaths.isEmpty()) {
+            int minSize = Math.min(skus.size(), skuImagePaths.size());
+            for (int i = 0; i < minSize; i++) {
+                ProductSku sku = skus.get(i);
+                String imagePath = skuImagePaths.get(i);
+
+                if (imagePath != null) {
+                    sku.setSkuImage(imagePath);
+                    sku.setUpdateTime(new Date());
+                    productSkuMapper.update(sku);
+                }
+            }
+        }
+    }
+
+    @Override
     public void deleteSku(Integer skuId) {
         // 检查SKU是否存在
         ProductSku existingSku = productSkuMapper.findById(skuId);
@@ -401,5 +427,25 @@ public class ProductServiceImpl implements ProductService {
 
         // 删除SKU
         productSkuMapper.delete(skuId);
+    }
+
+    @Override
+    public List<Product> getProductDetailsByShopId(Integer shopId) {
+        return productMapper.getProductDetailsByShopId(shopId);
+    }
+
+    @Override
+    @Transactional
+    public Product createProductWithSkuImages(ProductCreateDTO productCreateDTO, List<String> skuImagePaths) {
+        // 先创建商品和SKU（不含SKU图片）
+        Product product = this.createProduct(productCreateDTO);
+
+        // 如果提供了SKU图片路径，则更新SKU图片
+        if (productCreateDTO.getSkus() != null && !productCreateDTO.getSkus().isEmpty() &&
+                skuImagePaths != null && !skuImagePaths.isEmpty()) {
+            this.updateSkuImagesForNewProduct(product.getProductId(), skuImagePaths);
+        }
+
+        return product;
     }
 }

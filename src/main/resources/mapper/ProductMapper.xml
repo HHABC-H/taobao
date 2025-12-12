@@ -160,4 +160,35 @@
         FROM product
         WHERE product_id = #{productId}
     </select>
+    
+    <!-- 根据店铺ID查询商品详情列表，包含SKU信息 -->
+    <select id="getProductDetailsByShopId" resultMap="ProductDetailResultMap" parameterType="java.lang.Integer">
+        SELECT 
+            p.product_id,
+            p.product_name,
+            p.description,
+            p.main_images,
+            p.detail_images,
+            p.category_id,
+            p.merchant_id,
+            p.shop_id,
+            p.status,
+            p.create_time,
+            p.update_time,
+            s.sku_id,
+            s.product_id as sku_product_id,
+            s.sku_name,
+            s.sku_type,
+            s.price as sku_price,
+            s.stock,
+            s.sold_count,
+            s.sku_image,
+            s.status as sku_status,
+            s.create_time as sku_create_time,
+            s.update_time as sku_update_time
+        FROM product p
+        LEFT JOIN product_sku s ON p.product_id = s.product_id
+        WHERE p.shop_id = #{shopId}
+        ORDER BY p.create_time DESC
+    </select>
 </mapper>
