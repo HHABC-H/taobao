@@ -35,10 +35,15 @@ public class UserQueryDTO {
     /**
      * 页码
      */
-    private Integer pageNum;
+    private Integer pageNum = 1;
 
     /**
      * 每页条数
      */
-    private Integer pageSize;
+    private Integer pageSize = 10;
+
+    /**
+     * 偏移量，用于分页
+     */
+    private Integer offset;
 }

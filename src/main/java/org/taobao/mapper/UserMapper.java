@@ -16,19 +16,19 @@ public interface UserMapper {
     /**
      * 根据账号和密码查询用户
      */
-    @Select("SELECT user_id AS userId, account, password, user_type AS userType, status, username, gender, birthday, phone, email, avatar_url AS avatarUrl, create_time AS createTime, update_time AS updateTime FROM user WHERE account = #{account} AND password = #{password}")
+    @Select("SELECT user_id, account, password, user_type, status, username, gender, birthday, phone, email, avatar_url, create_time, update_time FROM user WHERE account = #{account} AND password = #{password}")
     User findByAccountAndPassword(String account, String password);
 
     /**
      * 根据账号查询用户
      */
-    @Select("SELECT user_id AS userId, account, password, user_type AS userType, status, username, gender, birthday, phone, email, avatar_url AS avatarUrl, create_time AS createTime, update_time AS updateTime FROM user WHERE account = #{account}")
+    @Select("SELECT user_id, account, password, user_type, status, username, gender, birthday, phone, email, avatar_url, create_time, update_time FROM user WHERE account = #{account}")
     User findByAccount(String account);
 
     /**
      * 根据id查询用户
      */
-    @Select("SELECT user_id AS userId, account, password, user_type AS userType, status, username, gender, birthday, phone, email, avatar_url AS avatarUrl, create_time AS createTime, update_time AS updateTime FROM user WHERE user_id = #{id}")
+    @Select("SELECT user_id, account, password, user_type, status, username, gender, birthday, phone, email, avatar_url, create_time, update_time FROM user WHERE user_id = #{id}")
     User findById(Long id);
 
     /**
@@ -49,6 +49,11 @@ public interface UserMapper {
      * 获取用户列表
      */
     List<User> getUserList(UserQueryDTO userQueryDTO);
+
+    /**
+     * 获取用户总数
+     */
+    Integer getUserCount(UserQueryDTO userQueryDTO);
 
     /**
      * 更新用户状态

@@ -93,7 +93,7 @@
             update_time
         FROM orders
         <where>
-            <if test="userId != null and shopId == null">
+            <if test="userId != null">
                 AND user_id = #{userId}
             </if>
             <if test="shopId != null">
@@ -128,7 +128,7 @@
         SELECT COUNT(*)
         FROM orders
         <where>
-            <if test="userId != null and shopId == null">
+            <if test="userId != null">
                 AND user_id = #{userId}
             </if>
             <if test="shopId != null">

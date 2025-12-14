@@ -55,8 +55,6 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
-
-
     @Override
     public void register(UserRegisterDTO userRegisterDTO) {
         // 1、检查账号是否已存在
@@ -77,7 +75,9 @@ public class UserServiceImpl implements UserService {
         // 4、设置默认值
         user.setStatus(StatusConstant.ENABLE); // 默认启用
         // 如果用户提供了用户名，使用提供的值，否则使用账号作为用户名
-        user.setUsername(userRegisterDTO.getUsername() != null && !userRegisterDTO.getUsername().isEmpty() ? userRegisterDTO.getUsername() : userRegisterDTO.getAccount());
+        user.setUsername(userRegisterDTO.getUsername() != null && !userRegisterDTO.getUsername().isEmpty()
+                ? userRegisterDTO.getUsername()
+                : userRegisterDTO.getAccount());
         user.setGender(userRegisterDTO.getGender() != null ? userRegisterDTO.getGender() : "unknown"); // 默认未知性别
         user.setPhone(userRegisterDTO.getPhone() != null ? userRegisterDTO.getPhone() : ""); // 默认空手机号
         user.setEmail(userRegisterDTO.getEmail() != null ? userRegisterDTO.getEmail() : ""); // 默认空邮箱
@@ -125,7 +125,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getUserList(UserQueryDTO userQueryDTO) {
+        // 计算偏移量
+        if (userQueryDTO.getPageNum() != null && userQueryDTO.getPageSize() != null) {
+            userQueryDTO.setOffset((userQueryDTO.getPageNum() - 1) * userQueryDTO.getPageSize());
+        }
         return userMapper.getUserList(userQueryDTO);
+    }
+
+    @Override
+    public Integer getUserCount(UserQueryDTO userQueryDTO) {
+        return userMapper.getUserCount(userQueryDTO);
     }
 
     @Override

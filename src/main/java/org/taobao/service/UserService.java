@@ -21,6 +21,7 @@ public interface UserService {
 
     /**
      * 获取用户个人详情
+     * 
      * @param userId 用户ID
      * @return 用户详情
      */
@@ -28,20 +29,31 @@ public interface UserService {
 
     /**
      * 修改用户个人详情
-     * @param userId 用户ID
+     * 
+     * @param userId               用户ID
      * @param userProfileUpdateDTO 更新信息
      */
     void updateUserProfile(Long userId, UserProfileUpdateDTO userProfileUpdateDTO);
 
     /**
      * 获取用户列表
+     * 
      * @param userQueryDTO 查询条件
      * @return 用户列表
      */
     List<User> getUserList(UserQueryDTO userQueryDTO);
 
     /**
+     * 获取用户总数
+     * 
+     * @param userQueryDTO 查询条件
+     * @return 用户总数
+     */
+    Integer getUserCount(UserQueryDTO userQueryDTO);
+
+    /**
      * 根据ID获取用户详情
+     * 
      * @param userId 用户ID
      * @return 用户详情
      */
@@ -49,6 +61,7 @@ public interface UserService {
 
     /**
      * 更新用户状态
+     * 
      * @param userId 用户ID
      * @param status 状态：active-启用，inactive-禁用
      */
