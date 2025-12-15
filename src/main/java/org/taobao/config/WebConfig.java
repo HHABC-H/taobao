@@ -19,6 +19,6 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(tokenInterceptor)
                 .addPathPatterns("/**")// 设置拦截器拦截的请求路径（ /** 表示拦截所有请求）
                 .excludePathPatterns("/user/login", "/user/register", "/error", "/user/avatar/**",
-                        "/upload");// 设置不拦截的请求路径，使用相对路径（去除context-path前缀）
+                        "/upload", "/product/home/list");// 设置不拦截的请求路径，使用相对路径（去除context-path前缀）
     }
 }

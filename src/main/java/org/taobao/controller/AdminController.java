@@ -1,12 +1,14 @@
 package org.taobao.controller;
 
 import org.taobao.dto.OrderQueryDTO;
+import org.taobao.dto.ShopCreateDTO;
 import org.taobao.dto.UserProfileUpdateDTO;
 import org.taobao.dto.UserQueryDTO;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.Result;
 import org.taobao.pojo.User;
 import org.taobao.service.AdminService;
+import org.taobao.service.ShopService;
 import org.taobao.service.UserService;
 import org.taobao.utils.AliyunOSSOperator;
 import org.taobao.vo.AdminDashboardVO;
@@ -28,6 +30,9 @@ public class AdminController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ShopService shopService;
 
     @Autowired
     private AliyunOSSOperator aliyunOSSOperator;
@@ -170,6 +175,19 @@ public class AdminController {
     public Result<String> auditMerchant(@RequestParam Long id, @RequestParam String status) {
         try {
             userService.updateUserStatus(id, status);
+
+            // 如果审核通过，自动创建店铺
+            if ("active".equals(status)) {
+                // 创建默认店铺，使用商家用户名作为店铺名称
+                User user = userService.getUserById(id);
+                ShopCreateDTO shopCreateDTO = new ShopCreateDTO();
+                // 使用商家用户名作为店铺名称，确保唯一
+                shopCreateDTO.setShopName(user.getUsername() + "的店铺");
+                shopCreateDTO.setShopDescription(user.getUsername() + "的官方店铺");
+                // 自动创建店铺，与商家ID绑定
+                shopService.createShop(user.getUserId().intValue(), shopCreateDTO);
+            }
+
             return Result.success("商家审核成功");
         } catch (Exception e) {
             return Result.error("商家审核失败：" + e.getMessage());
