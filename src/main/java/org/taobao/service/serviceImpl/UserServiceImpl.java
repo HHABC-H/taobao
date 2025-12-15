@@ -46,8 +46,8 @@ public class UserServiceImpl implements UserService {
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
 
-        if (StatusConstant.DISABLE.equals(user.getStatus())) {
-            // 账号被锁定
+        if (StatusConstant.DISABLE.equals(user.getStatus()) || StatusConstant.LOCKED.equals(user.getStatus())) {
+            // 账号被禁用或锁定
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
 
@@ -73,7 +73,12 @@ public class UserServiceImpl implements UserService {
         user.setPassword(encryptedPassword);
 
         // 4、设置默认值
-        user.setStatus(StatusConstant.ENABLE); // 默认启用
+        // 商家注册时默认锁定，需要管理员启用
+        if ("merchant".equals(userRegisterDTO.getUserType())) {
+            user.setStatus(StatusConstant.LOCKED); // 商家默认锁定
+        } else {
+            user.setStatus(StatusConstant.ENABLE); // 其他用户默认启用
+        }
         // 如果用户提供了用户名，使用提供的值，否则使用账号作为用户名
         user.setUsername(userRegisterDTO.getUsername() != null && !userRegisterDTO.getUsername().isEmpty()
                 ? userRegisterDTO.getUsername()
