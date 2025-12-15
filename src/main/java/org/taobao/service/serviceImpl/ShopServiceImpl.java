@@ -223,6 +223,11 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
+    public Integer getShopCount(ShopQueryDTO shopQueryDTO) {
+        return shopMapper.getShopCount(shopQueryDTO);
+    }
+
+    @Override
     public ShopStatisticsDTO getShopStatistics(Integer shopId) {
         // 检查店铺是否存在
         Shop shop = shopMapper.findById(shopId);

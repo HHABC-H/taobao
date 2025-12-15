@@ -10,6 +10,7 @@ import org.taobao.dto.ShopQueryDTO;
 import org.taobao.dto.ShopStatisticsDTO;
 import org.taobao.dto.ShopUpdateDTO;
 import org.taobao.dto.ShopDTO;
+import org.taobao.vo.PageResult;
 import org.taobao.exception.ShopNotFoundException;
 import org.taobao.pojo.Orders;
 import org.taobao.pojo.Product;
@@ -127,18 +128,23 @@ public class ShopController {
      * 获取店铺列表
      *
      * @param shopQueryDTO 查询条件
-     * @return 店铺列表
+     * @return 店铺分页结果
      */
     @GetMapping("/list")
-    public Result<List<ShopDTO>> getShopList(ShopQueryDTO shopQueryDTO) {
+    public Result<PageResult<ShopDTO>> getShopList(ShopQueryDTO shopQueryDTO) {
         try {
             List<Shop> shopList = shopService.getShopList(shopQueryDTO);
+            // 获取店铺总数
+            Integer total = shopService.getShopCount(shopQueryDTO);
             // 转换为ShopDTO列表
             List<ShopDTO> shopDTOList = new java.util.ArrayList<>();
             for (Shop shop : shopList) {
                 shopDTOList.add(ShopDTO.fromShop(shop));
             }
-            return Result.success(shopDTOList);
+            // 构建分页结果
+            PageResult<ShopDTO> pageResult = PageResult.build(shopDTOList, total.longValue(), shopQueryDTO.getPageNum(),
+                    shopQueryDTO.getPageSize());
+            return Result.success(pageResult);
         } catch (Exception e) {
             return Result.error("获取店铺列表失败：" + e.getMessage());
         }

@@ -31,6 +31,20 @@
         LIMIT #{pageNum}, #{pageSize}
     </select>
     
+    <!-- 获取店铺总数 -->
+    <select id="getShopCount" resultType="java.lang.Integer" parameterType="org.taobao.dto.ShopQueryDTO">
+        SELECT COUNT(*)
+        FROM shop
+        <where>
+            <if test="shopName != null and shopName != ''">
+                AND shop_name LIKE CONCAT('%', #{shopName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+    
     <!-- 获取店铺统计信息 -->
     <select id="getShopStatistics" resultType="org.taobao.dto.ShopStatisticsDTO" parameterType="java.lang.Integer">
         SELECT

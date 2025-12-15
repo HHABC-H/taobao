@@ -6,14 +6,18 @@
 |---------|---------|---------|
 | `/admin/dashboard` | GET | 管理员首页统计数据 |
 | `/admin/user/list` | GET | 获取用户列表（分页） |
-| `/admin/user/{id}` | GET | 获取用户详情 |
-| `/admin/user/status/{id}` | PUT | 启用/禁用用户 |
-| `/admin/user/{id}` | PUT | 修改用户信息 |
-| `/admin/user/avatar/{id}` | POST | 修改用户头像 |
-| `/admin/user/{id}` | DELETE | 删除用户 |
+| `/admin/user/customer/list` | GET | 获取普通用户列表（分页） |
+| `/admin/user/merchant/list` | GET | 获取商家列表（分页） |
+| `/admin/user` | GET | 获取用户详情 |
+| `/admin/user/status` | PUT | 启用/禁用用户 |
+| `/admin/user/update` | PUT | 修改用户信息 |
+| `/admin/user/avatar` | POST | 修改用户头像 |
+| `/admin/user/delete` | DELETE | 删除用户 |
+| `/admin/user/merchant/audit` | PUT | 审核商家 |
+| `/admin/user/merchant/pending/list` | GET | 获取待审核商家列表（分页） |
 | `/admin/order/list` | GET | 获取订单列表（分页） |
-| `/admin/order/{id}` | GET | 获取订单详情 |
-| `/admin/order/cancel/{id}` | PUT | 取消订单 |
+| `/admin/order/detail` | GET | 获取订单详情 |
+| `/admin/order/cancel` | PUT | 取消订单 |
 
 ## 2. 接口详细信息
 
@@ -23,7 +27,7 @@
 
 **请求方法**：GET
 
-**接口描述**：获取管理员首页统计数据，包括今日新增用户数、今日交易额、今日新增订单数、今日完成订单数
+**接口描述**：获取管理员首页统计数据，包括用户总数、总交易额、总订单数、总完成订单数
 
 **请求参数**：无
 
@@ -33,10 +37,10 @@
   "code": 200,
   "message": "success",
   "data": {
-    "newUserCount": 12,
-    "todayTransactionAmount": 15689.50,
-    "newOrderCount": 25,
-    "completedOrderCount": 18
+    "newUserCount": 18,  // 用户总数
+    "todayTransactionAmount": 15689.50,  // 总交易额
+    "newOrderCount": 28,  // 总订单数
+    "completedOrderCount": 1  // 总完成订单数
   }
 }
 ```
@@ -88,7 +92,99 @@
 }
 ```
 
-### 2.3 获取用户详情 
+### 2.3 获取普通用户列表（分页）
+
+**接口路径**：`/admin/user/customer/list`
+
+**请求方法**：GET
+
+**接口描述**：获取普通用户列表，支持多种条件查询和分页
+
+**请求参数**：
+
+| 参数名 | 类型 | 描述 | 默认值 |
+|-------|------|------|--------|
+| `userId` | Long | 用户ID | - |
+| `account` | String | 账号 | - |
+| `username` | String | 用户名 | - |
+| `status` | String | 状态：active-启用, inactive-禁用 | - |
+| `pageNum` | Integer | 页码 | 1 |
+| `pageSize` | Integer | 每页条数 | 10 |
+
+**说明**：前端可以传递分页参数 `pageNum` 和 `pageSize` 来控制分页效果。如果不传递，后端会使用默认值（页码1，每页10条）。系统会根据这两个参数计算偏移量，实现分页查询。此接口自动过滤用户类型为普通用户（customer）的数据。
+
+**响应示例**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "userId": 8,
+        "account": "user1",
+        "userType": "customer",
+        "status": "active",
+        "username": "咋",
+        "createTime": "2025-12-05T16:26:38",
+        "updateTime": "2025-12-09T21:22:46"
+      }
+    ],
+    "total": 10,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+### 2.4 获取商家列表（分页）
+
+**接口路径**：`/admin/user/merchant/list`
+
+**请求方法**：GET
+
+**接口描述**：获取商家列表，支持多种条件查询和分页
+
+**请求参数**：
+
+| 参数名 | 类型 | 描述 | 默认值 |
+|-------|------|------|--------|
+| `userId` | Long | 用户ID | - |
+| `account` | String | 账号 | - |
+| `username` | String | 用户名 | - |
+| `status` | String | 状态：active-启用, inactive-禁用 | - |
+| `pageNum` | Integer | 页码 | 1 |
+| `pageSize` | Integer | 每页条数 | 10 |
+
+**说明**：前端可以传递分页参数 `pageNum` 和 `pageSize` 来控制分页效果。如果不传递，后端会使用默认值（页码1，每页10条）。系统会根据这两个参数计算偏移量，实现分页查询。此接口自动过滤用户类型为商家（merchant）的数据。
+
+**响应示例**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "userId": 2,
+        "account": "merchant_digital",
+        "userType": "merchant",
+        "status": "active",
+        "username": "数码科技旗舰店",
+        "createTime": "2025-12-05T16:26:38",
+        "updateTime": "2025-12-08T15:03:36"
+      }
+    ],
+    "total": 6,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+### 2.5 获取用户详情 
  
  **接口路径**：`/admin/user` 
  
@@ -125,7 +221,7 @@
 }
 ```
 
-### 2.4 启用/禁用用户
+### 2.6 启用/禁用用户
 
 **接口路径**：`/admin/user/status`
 
@@ -149,7 +245,7 @@
 }
 ```
 
-### 2.5 修改用户信息
+### 2.7 修改用户信息
 
 **接口路径**：`/admin/user/update`
 
@@ -186,7 +282,7 @@
 }
 ```
 
-### 2.6 修改用户头像
+### 2.8 修改用户头像
 
 **接口路径**：`/admin/user/avatar`
 
@@ -210,7 +306,7 @@
 }
 ```
 
-### 2.7 删除用户
+### 2.9 删除用户
 
 **接口路径**：`/admin/user/delete`
 
@@ -233,7 +329,76 @@
 }
 ```
 
-### 2.8 获取订单列表（分页）
+### 2.10 审核商家
+
+**接口路径**：`/admin/user/merchant/audit`
+
+**请求方法**：PUT
+
+**接口描述**：审核商家，更新商家用户状态
+
+**请求参数**：
+
+| 参数名 | 类型 | 位置 | 描述 |
+|-------|------|------|------|
+| `id` | Long | Query | 商家用户ID |
+| `status` | String | Query | 审核状态：active-通过, inactive-拒绝, locked-锁定 |
+
+**响应示例**：
+```json
+{
+  "code": 200,
+  "message": "商家审核成功",
+  "data": null
+}
+```
+
+### 2.11 获取待审核商家列表（分页）
+
+**接口路径**：`/admin/user/merchant/pending/list`
+
+**请求方法**：GET
+
+**接口描述**：获取待审核商家列表，自动过滤状态为locked的商家用户
+
+**请求参数**：
+
+| 参数名 | 类型 | 描述 | 默认值 |
+|-------|------|------|--------|
+| `userId` | Long | 用户ID | - |
+| `account` | String | 账号 | - |
+| `username` | String | 用户名 | - |
+| `pageNum` | Integer | 页码 | 1 |
+| `pageSize` | Integer | 每页条数 | 10 |
+
+**说明**：前端可以传递分页参数 `pageNum` 和 `pageSize` 来控制分页效果。如果不传递，后端会使用默认值（页码1，每页10条）。系统会根据这两个参数计算偏移量，实现分页查询。
+
+**响应示例**：
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "userId": 10,
+        "account": "merchant_new",
+        "userType": "merchant",
+        "status": "locked",
+        "username": "新商家",
+        "createTime": "2025-12-15T10:30:00",
+        "updateTime": "2025-12-15T10:30:00"
+      }
+    ],
+    "total": 5,
+    "pageNum": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}
+```
+
+### 2.12 获取订单列表（分页）
 
 **接口路径**：`/admin/order/list`
 
@@ -297,7 +462,7 @@
 }
 ```
 
-### 2.9 获取订单详情
+### 2.13 获取订单详情
 
 **接口路径**：`/admin/order/detail`
 
@@ -342,7 +507,7 @@
 }
 ```
 
-### 2.10 取消订单
+### 2.14 取消订单
 
 **接口路径**：`/admin/order/cancel`
 

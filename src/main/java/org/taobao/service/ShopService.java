@@ -61,6 +61,14 @@ public interface ShopService {
     List<Shop> getShopList(ShopQueryDTO shopQueryDTO);
     
     /**
+     * 获取店铺总数
+     * 
+     * @param shopQueryDTO 查询条件
+     * @return 店铺总数
+     */
+    Integer getShopCount(ShopQueryDTO shopQueryDTO);
+    
+    /**
      * 获取店铺统计信息
      * 
      * @param shopId 店铺ID

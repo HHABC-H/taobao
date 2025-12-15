@@ -111,6 +111,30 @@ public class AdminController {
     }
 
     /**
+     * 获取待审核商家列表（分页）
+     * 路径：/admin/user/merchant/pending/list
+     */
+    @GetMapping("/user/merchant/pending/list")
+    public Result<PageResult<User>> getPendingMerchantUserList(UserQueryDTO userQueryDTO) {
+        try {
+            // 设置用户类型为商家
+            userQueryDTO.setUserType("merchant");
+            // 设置状态为锁定（待审核）
+            userQueryDTO.setStatus("locked");
+            // 获取用户列表
+            List<User> userList = userService.getUserList(userQueryDTO);
+            // 获取用户总数
+            Integer total = userService.getUserCount(userQueryDTO);
+            // 构建分页结果
+            PageResult<User> pageResult = PageResult.build(userList, total.longValue(), userQueryDTO.getPageNum(),
+                    userQueryDTO.getPageSize());
+            return Result.success(pageResult);
+        } catch (Exception e) {
+            return Result.error("获取待审核商家列表失败：" + e.getMessage());
+        }
+    }
+
+    /**
      * 获取用户详情
      * 路径：/admin/user?id=14
      */
@@ -135,6 +159,20 @@ public class AdminController {
             return Result.success("用户状态更新成功");
         } catch (Exception e) {
             return Result.error("用户状态更新失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 审核商家
+     * 路径：/admin/user/merchant/audit?id=14&status=active
+     */
+    @PutMapping("/user/merchant/audit")
+    public Result<String> auditMerchant(@RequestParam Long id, @RequestParam String status) {
+        try {
+            userService.updateUserStatus(id, status);
+            return Result.success("商家审核成功");
+        } catch (Exception e) {
+            return Result.error("商家审核失败：" + e.getMessage());
         }
     }
 

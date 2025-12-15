@@ -124,8 +124,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Orders> getOrderList(OrderQueryDTO orderQueryDTO) {
-        // 如果未指定用户ID，则使用当前登录用户ID
-        if (orderQueryDTO.getUserId() == null) {
+        // 如果未指定用户ID，且不是查询店铺订单，则使用当前登录用户ID
+        if (orderQueryDTO.getUserId() == null && orderQueryDTO.getShopId() == null) {
             orderQueryDTO.setUserId(BaseContext.getCurrentId().intValue());
         }
 
@@ -158,8 +158,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Integer getOrderCount(OrderQueryDTO orderQueryDTO) {
-        // 如果未指定用户ID，则使用当前登录用户ID
-        if (orderQueryDTO.getUserId() == null) {
+        // 如果未指定用户ID，且不是查询店铺订单，则使用当前登录用户ID
+        if (orderQueryDTO.getUserId() == null && orderQueryDTO.getShopId() == null) {
             orderQueryDTO.setUserId(BaseContext.getCurrentId().intValue());
         }
 
